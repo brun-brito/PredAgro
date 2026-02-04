@@ -1,0 +1,4 @@
+node_modules
+.env
+npm-debug.log*
+pred-agro-firebase-adminsdk-fbsvc-3e36bd3970.json

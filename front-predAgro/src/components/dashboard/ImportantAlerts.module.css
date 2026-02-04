@@ -1,0 +1,80 @@
+.card {
+  border: 1px solid rgba(63, 155, 104, 0.2);
+  border-radius: var(--radius-md);
+  background-color: rgba(255, 255, 255, 0.92);
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.card header {
+  display: grid;
+  gap: 4px;
+}
+
+.card h2 {
+  color: var(--green-900);
+  font-size: 1.2rem;
+}
+
+.card header p {
+  color: var(--slate-700);
+}
+
+.alertList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.alertItem {
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(149, 168, 162, 0.3);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.alertHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.alertHeader strong {
+  color: var(--slate-900);
+}
+
+.alertItem p {
+  color: var(--slate-700);
+  line-height: 1.42;
+}
+
+.alertItem small {
+  color: var(--slate-500);
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.high {
+  color: var(--danger);
+  background-color: rgba(191, 65, 47, 0.13);
+}
+
+.medium {
+  color: #8a560a;
+  background-color: rgba(197, 127, 27, 0.15);
+}
+
+.low {
+  color: var(--success);
+  background-color: rgba(36, 117, 75, 0.14);
+}

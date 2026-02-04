@@ -1,0 +1,61 @@
+.card {
+  border: 1px solid rgba(63, 155, 104, 0.2);
+  border-radius: var(--radius-md);
+  background-color: rgba(255, 255, 255, 0.92);
+  padding: 20px;
+  display: grid;
+  gap: 18px;
+}
+
+.card header {
+  display: grid;
+  gap: 4px;
+}
+
+.card h2 {
+  color: var(--green-900);
+  font-size: 1.2rem;
+}
+
+.card header p {
+  color: var(--slate-600);
+  font-weight: 600;
+}
+
+.metricGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.metricItem {
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(149, 168, 162, 0.3);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.metricIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  color: var(--green-900);
+  background-color: var(--green-100);
+}
+
+.metricItem p {
+  font-size: 0.88rem;
+  color: var(--slate-500);
+}
+
+.metricItem strong {
+  color: var(--slate-900);
+}
+
+.card footer {
+  font-size: 0.86rem;
+  color: var(--slate-500);
+}

@@ -1,0 +1,37 @@
+:root {
+  --green-900: #0f3a29;
+  --green-800: #16563a;
+  --green-700: #1f734b;
+  --green-500: #3f9b68;
+  --green-300: #98d4b4;
+  --green-100: #dff2e8;
+
+  --teal-900: #123b38;
+  --teal-700: #1e5f58;
+  --teal-200: #cfece5;
+
+  --slate-900: #12201d;
+  --slate-800: #20322f;
+  --slate-700: #2f4440;
+  --slate-600: #465b56;
+  --slate-500: #5c706b;
+  --slate-300: #95a8a2;
+  --slate-100: #edf4f1;
+
+  --white: #ffffff;
+  --danger: #bf412f;
+  --warning: #c57f1b;
+  --success: #24754b;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+
+  --shadow-soft: 0 12px 40px rgba(15, 58, 41, 0.12);
+  --shadow-focus: 0 0 0 3px rgba(31, 115, 75, 0.28);
+
+  --font-heading: 'Sora', 'Segoe UI', sans-serif;
+  --font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
+
+  --content-width: min(1120px, 92vw);
+}
