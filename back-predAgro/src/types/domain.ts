@@ -1,3 +1,13 @@
+export type AlertSeverity = 'low' | 'medium' | 'high';
+
+export interface AlertItem {
+  id: string;
+  title: string;
+  description: string;
+  severity: AlertSeverity;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -17,60 +27,82 @@ export interface AgriculturalProfile {
   updatedAt: string;
 }
 
-export interface ClimateRecord {
+export interface Farm {
   id: string;
   userId: string;
-  region: string;
-  temperatureCelsius: number;
-  rainMillimeters: number;
-  humidity: number;
-  windSpeedKmh: number;
-  collectedAt: string;
+  name: string;
+  city?: string;
+  state?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
-export interface ClimateSnapshot {
-  region: string;
-  temperatureCelsius: number;
-  rainMillimeters: number;
-  humidity: number;
-  windSpeedKmh: number;
-  collectedAt: string;
-}
+export type FieldGeometry = {
+  type: 'Polygon' | 'MultiPolygon';
+  coordinates: number[][][] | number[][][][];
+};
 
-export interface PredictionSummary {
-  crop: string;
-  expectedYieldBagsPerHectare: number;
-  confidence: number;
-  nextHarvestWindow: string;
-}
-
-export type AlertSeverity = 'low' | 'medium' | 'high';
-
-export interface AlertItem {
+export interface Field {
   id: string;
-  title: string;
-  description: string;
-  severity: AlertSeverity;
+  userId: string;
+  farmId: string;
+  name: string;
+  geometry: FieldGeometry;
+  areaHa: number;
+  centroidLat: number;
+  centroidLon: number;
   createdAt: string;
+  updatedAt: string;
 }
 
-export interface DashboardModules {
-  charts: string;
-  tables: string;
-  reports: string;
+export interface WeatherDay {
+  date: string;
+  temperatureMin: number;
+  temperatureMax: number;
+  precipitationSum: number;
+  windSpeedMax?: number;
+  humidityMean?: number;
+}
+
+export interface WeatherSnapshot {
+  id: string;
+  userId: string;
+  farmId: string;
+  fieldId: string;
+  source: string;
+  fetchedAt: string;
+  expiresAt: string;
+  days: WeatherDay[];
+}
+
+export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface PredictionRisk {
+  fieldId: string;
+  riskLevel: RiskLevel;
+  reasons: string[];
+  recommendations: string[];
+  generatedAt: string;
+}
+
+export interface DashboardTotals {
+  farms: number;
+  fields: number;
+  areaHa: number;
+}
+
+export interface DashboardFieldSummary {
+  fieldId: string;
+  fieldName: string;
+  farmId: string;
+  farmName?: string;
+  areaHa: number;
+  lastSnapshotAt?: string;
 }
 
 export interface DashboardOverview {
-  climate: {
-    region: string;
-    temperatureCelsius: number;
-    rainMillimeters: number;
-    humidity: number;
-    windSpeedKmh: number;
-    updatedAt: string;
-  };
-  prediction: PredictionSummary;
+  totals: DashboardTotals;
   alerts: AlertItem[];
-  modules: DashboardModules;
+  fields: DashboardFieldSummary[];
+  updatedAt: string;
 }

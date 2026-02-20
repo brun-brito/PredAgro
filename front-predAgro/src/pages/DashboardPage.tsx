@@ -1,21 +1,21 @@
 import { useEffect, useState } from 'react';
-import { FaArrowRotateRight, FaRightFromBracket } from 'react-icons/fa6';
-import { useNavigate } from 'react-router-dom';
-import { ClimateOverview } from '../components/dashboard/ClimateOverview';
-import { ForecastSummary } from '../components/dashboard/ForecastSummary';
+import { FaArrowRotateRight, FaMapLocationDot, FaRightFromBracket } from 'react-icons/fa6';
+import { Link, useNavigate } from 'react-router-dom';
+import { FieldSummaryList } from '../components/dashboard/FieldSummaryList';
 import { ImportantAlerts } from '../components/dashboard/ImportantAlerts';
 import { PreparedModules } from '../components/dashboard/PreparedModules';
+import { TotalsOverview } from '../components/dashboard/TotalsOverview';
+import { LoadingState } from '../components/ui/LoadingState';
 import { useAuth } from '../hooks/useAuth';
 import { dashboardService } from '../services/dashboardService';
 import type { DashboardOverview } from '../types/domain';
-import { getFallbackOverview } from '../utils/dashboardFallback';
 import styles from './DashboardPage.module.css';
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const { token, user, signOut } = useAuth();
 
-  const [overview, setOverview] = useState<DashboardOverview>(getFallbackOverview);
+  const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasApiError, setHasApiError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -25,6 +25,9 @@ export function DashboardPage() {
 
     async function loadOverview() {
       if (!token) {
+        if (isMounted) {
+          setIsLoading(false);
+        }
         return;
       }
 
@@ -40,7 +43,7 @@ export function DashboardPage() {
       } catch {
         if (isMounted) {
           setHasApiError(true);
-          setOverview(getFallbackOverview());
+          setOverview(null);
         }
       } finally {
         if (isMounted) {
@@ -68,10 +71,14 @@ export function DashboardPage() {
           <div>
             <p className={styles.eyebrow}>Painel principal</p>
             <h1>Bem-vindo, {user?.name ?? 'Produtor'}</h1>
-            <p className={styles.subtitle}>Acompanhe indicadores climáticos e previsões da sua safra.</p>
+            <p className={styles.subtitle}>Acompanhe fazendas, talhões e alertas climáticos.</p>
           </div>
 
           <div className={styles.headerActions}>
+            <Link to="/fazendas" className={styles.outlineButton}>
+              <FaMapLocationDot />
+              Fazendas
+            </Link>
             <button type="button" onClick={() => setRefreshKey((value) => value + 1)} className={styles.outlineButton}>
               <FaArrowRotateRight />
               Atualizar
@@ -84,18 +91,28 @@ export function DashboardPage() {
         </header>
 
         {hasApiError && (
-          <p className={styles.warningBanner}>
-            Não foi possível carregar dados da API neste momento. Exibindo informações de referência.
-          </p>
+          <p className={styles.warningBanner}>Não foi possível carregar dados da API neste momento.</p>
         )}
 
-        <section className={styles.grid}>
-          <ClimateOverview climate={overview.climate} isLoading={isLoading} />
-          <ForecastSummary prediction={overview.prediction} isLoading={isLoading} />
-          <ImportantAlerts alerts={overview.alerts} isLoading={isLoading} />
-        </section>
+        {isLoading && (
+          <div className={styles.loadingBlock}>
+            <LoadingState label="Carregando dados do painel..." />
+          </div>
+        )}
 
-        <PreparedModules modules={overview.modules} />
+        {!isLoading && overview && (
+          <section className={styles.grid}>
+            <TotalsOverview totals={overview.totals} isLoading={isLoading} />
+            <ImportantAlerts alerts={overview.alerts} isLoading={isLoading} />
+            <FieldSummaryList fields={overview.fields} isLoading={isLoading} />
+          </section>
+        )}
+
+        {!isLoading && !overview && !hasApiError && (
+          <p className={styles.emptyState}>Nenhum dado disponível para exibir no painel.</p>
+        )}
+
+        <PreparedModules />
       </section>
     </main>
   );

@@ -1,0 +1,56 @@
+.card {
+  border: 1px solid rgba(63, 155, 104, 0.2);
+  border-radius: var(--radius-md);
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.card header {
+  display: grid;
+  gap: 4px;
+}
+
+.card h2 {
+  color: var(--green-900);
+  font-size: 1.2rem;
+}
+
+.card header p {
+  color: var(--slate-700);
+}
+
+.list {
+  display: grid;
+  gap: 8px;
+}
+
+.dayItem {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(149, 168, 162, 0.3);
+  background-color: var(--white);
+  align-items: center;
+}
+
+.dayItem strong {
+  color: var(--slate-900);
+}
+
+.dayItem span {
+  color: var(--slate-600);
+}
+
+.card small {
+  color: var(--slate-500);
+}
+
+@media (max-width: 768px) {
+  .dayItem {
+    grid-template-columns: 1fr;
+  }
+}

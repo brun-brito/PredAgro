@@ -1,49 +1,61 @@
-import type { AgriculturalProfile, ClimateSnapshot, PredictionSummary } from '../types/domain';
+import type { PredictionRisk, RiskLevel, WeatherDay } from '../types/domain';
 
-function getHarvestWindow(daysFromNowStart: number, daysFromNowEnd: number) {
-  const startDate = new Date();
-  const endDate = new Date();
-
-  startDate.setDate(startDate.getDate() + daysFromNowStart);
-  endDate.setDate(endDate.getDate() + daysFromNowEnd);
-
-  const startDay = startDate.toLocaleDateString('pt-BR', { day: '2-digit' });
-  const endDay = endDate.toLocaleDateString('pt-BR', { day: '2-digit' });
-  const month = endDate.toLocaleDateString('pt-BR', { month: 'long' });
-
-  return `${startDay} a ${endDay} de ${month}`;
+function pushReason(reasons: string[], text: string) {
+  if (!reasons.includes(text)) {
+    reasons.push(text);
+  }
 }
 
-export function buildSummary(
-  profile: AgriculturalProfile | null,
-  climateSnapshot: ClimateSnapshot
-): PredictionSummary {
-  const crop = profile?.cropTypes?.[0] ?? 'Soja';
+function pushRecommendation(recommendations: string[], text: string) {
+  if (!recommendations.includes(text)) {
+    recommendations.push(text);
+  }
+}
 
-  let expectedYieldBagsPerHectare = 64;
+export function evaluateRisk(days: WeatherDay[]): Omit<PredictionRisk, 'fieldId' | 'generatedAt'> {
+  const nextDays = days.slice(0, 5);
 
-  if (climateSnapshot.temperatureCelsius > 32) {
-    expectedYieldBagsPerHectare -= 4;
+  const totalPrecip = nextDays.reduce((sum, day) => sum + day.precipitationSum, 0);
+  const maxTemp = Math.max(...nextDays.map((day) => day.temperatureMax));
+  const minTemp = Math.min(...nextDays.map((day) => day.temperatureMin));
+  const tempVariation = maxTemp - minTemp;
+
+  let riskLevel: RiskLevel = 'LOW';
+  const reasons: string[] = [];
+  const recommendations: string[] = [];
+
+  if (totalPrecip < 5 && maxTemp >= 32) {
+    riskLevel = 'HIGH';
+    pushReason(reasons, 'Pouca chuva e temperatura elevada nos próximos dias.');
+    pushRecommendation(recommendations, 'Priorize irrigação e monitoramento de umidade do solo.');
   }
 
-  if (climateSnapshot.rainMillimeters < 5) {
-    expectedYieldBagsPerHectare -= 3;
+  if (totalPrecip < 10 && riskLevel !== 'HIGH') {
+    riskLevel = 'MEDIUM';
+    pushReason(reasons, 'Volume de chuva abaixo do ideal no curto prazo.');
+    pushRecommendation(recommendations, 'Considere ajustar manejo hídrico e revisar calendário de aplicação.');
   }
 
-  if (climateSnapshot.humidity < 55) {
-    expectedYieldBagsPerHectare -= 2;
+  if (totalPrecip > 60) {
+    riskLevel = riskLevel === 'HIGH' ? 'HIGH' : 'MEDIUM';
+    pushReason(reasons, 'Acúmulo de chuva alto no período, risco de encharcamento.');
+    pushRecommendation(recommendations, 'Avalie drenagem e evite tráfego intenso nas áreas úmidas.');
   }
 
-  const areaFactor = profile?.areaHectares && profile.areaHectares > 100 ? 1.2 : 0.4;
-  const confidence = Math.max(
-    58,
-    Math.min(93, 76 + areaFactor + (climateSnapshot.rainMillimeters >= 5 ? 4 : -3))
-  );
+  if (tempVariation >= 12 && riskLevel === 'LOW') {
+    riskLevel = 'MEDIUM';
+    pushReason(reasons, 'Variação térmica acentuada nos próximos dias.');
+    pushRecommendation(recommendations, 'Redobre atenção ao manejo de estresse térmico.');
+  }
+
+  if (reasons.length === 0) {
+    pushReason(reasons, 'Condições climáticas dentro da faixa esperada.');
+    pushRecommendation(recommendations, 'Mantenha o acompanhamento diário dos indicadores.');
+  }
 
   return {
-    crop,
-    expectedYieldBagsPerHectare: Number(expectedYieldBagsPerHectare.toFixed(1)),
-    confidence: Number(confidence.toFixed(0)),
-    nextHarvestWindow: getHarvestWindow(38, 54),
+    riskLevel,
+    reasons,
+    recommendations,
   };
 }

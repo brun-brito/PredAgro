@@ -1,23 +1,18 @@
-import type { DashboardModules } from '../../types/domain';
 import styles from './PreparedModules.module.css';
 
-interface PreparedModulesProps {
-  modules: DashboardModules;
-}
-
-export function PreparedModules({ modules }: PreparedModulesProps) {
+export function PreparedModules() {
   const items = [
     {
       title: 'Gráficos',
-      description: modules.charts,
+      description: 'Estrutura pronta para histórico de chuva e temperatura por período.',
     },
     {
       title: 'Tabelas',
-      description: modules.tables,
+      description: 'Tabela preparada para consolidar talhões e indicadores da safra.',
     },
     {
       title: 'Relatórios',
-      description: modules.reports,
+      description: 'Modelo pronto para gerar relatórios executivos e técnicos.',
     },
   ];
 

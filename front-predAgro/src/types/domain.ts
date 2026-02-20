@@ -18,20 +18,49 @@ export interface AuthResponse {
   token: string;
 }
 
-export interface ClimateSnapshot {
-  region: string;
-  temperatureCelsius: number;
-  rainMillimeters: number;
-  humidity: number;
-  windSpeedKmh: number;
+export interface Farm {
+  id: string;
+  name: string;
+  city?: string;
+  state?: string;
+  createdAt: string;
   updatedAt: string;
 }
 
-export interface PredictionSummary {
-  crop: string;
-  expectedYieldBagsPerHectare: number;
-  confidence: number;
-  nextHarvestWindow: string;
+export type FieldGeometry = {
+  type: 'Polygon' | 'MultiPolygon';
+  coordinates: number[][][] | number[][][][];
+};
+
+export interface Field {
+  id: string;
+  farmId: string;
+  name: string;
+  geometry: FieldGeometry;
+  areaHa: number;
+  centroidLat: number;
+  centroidLon: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WeatherDay {
+  date: string;
+  temperatureMin: number;
+  temperatureMax: number;
+  precipitationSum: number;
+  windSpeedMax?: number;
+  humidityMean?: number;
+}
+
+export interface WeatherSnapshot {
+  id: string;
+  fieldId: string;
+  farmId: string;
+  source: string;
+  fetchedAt: string;
+  expiresAt: string;
+  days: WeatherDay[];
 }
 
 export type AlertSeverity = 'low' | 'medium' | 'high';
@@ -44,15 +73,34 @@ export interface AlertItem {
   createdAt: string;
 }
 
-export interface DashboardModules {
-  charts: string;
-  tables: string;
-  reports: string;
+export interface DashboardTotals {
+  farms: number;
+  fields: number;
+  areaHa: number;
+}
+
+export interface DashboardFieldSummary {
+  fieldId: string;
+  fieldName: string;
+  farmId: string;
+  farmName?: string;
+  areaHa: number;
+  lastSnapshotAt?: string;
 }
 
 export interface DashboardOverview {
-  climate: ClimateSnapshot;
-  prediction: PredictionSummary;
+  totals: DashboardTotals;
   alerts: AlertItem[];
-  modules: DashboardModules;
+  fields: DashboardFieldSummary[];
+  updatedAt: string;
+}
+
+export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface PredictionSummary {
+  fieldId: string;
+  riskLevel: RiskLevel;
+  reasons: string[];
+  recommendations: string[];
+  generatedAt: string;
 }

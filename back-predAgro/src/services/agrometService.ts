@@ -7,6 +7,12 @@ interface AgrometSource {
 
 const availableSources: AgrometSource[] = [
   {
+    id: 'open-meteo',
+    name: 'Open-Meteo',
+    type: 'público',
+    status: 'ativo',
+  },
+  {
     id: 'inmet',
     name: 'INMET',
     type: 'público',
@@ -22,18 +28,4 @@ const availableSources: AgrometSource[] = [
 
 export function listSources() {
   return availableSources;
-}
-
-export function getLatestSnapshot(region = 'Triângulo Mineiro') {
-  const currentHour = new Date().getHours();
-  const thermalShift = currentHour >= 12 && currentHour <= 16 ? 4 : 0;
-
-  return {
-    region,
-    temperatureCelsius: 26 + thermalShift,
-    rainMillimeters: currentHour % 2 === 0 ? 7 : 3,
-    humidity: currentHour % 2 === 0 ? 68 : 55,
-    windSpeedKmh: 11 + (currentHour % 3),
-    collectedAt: new Date().toISOString(),
-  };
 }

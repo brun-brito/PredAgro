@@ -8,12 +8,3 @@ export async function listSources(req: Request, res: Response) {
     sources,
   });
 }
-
-export async function getLatest(req: Request, res: Response) {
-  const region = req.query.region as string | undefined;
-  const snapshot = agrometService.getLatestSnapshot(region);
-
-  res.status(200).json({
-    snapshot,
-  });
-}

@@ -67,6 +67,18 @@
   font-weight: 600;
 }
 
+.loadingBlock {
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(63, 155, 104, 0.35);
+  padding: 16px 18px;
+  background-color: rgba(223, 242, 232, 0.5);
+}
+
+.emptyState {
+  color: var(--slate-600);
+  font-weight: 600;
+}
+
 .grid {
   display: grid;
   gap: 16px;

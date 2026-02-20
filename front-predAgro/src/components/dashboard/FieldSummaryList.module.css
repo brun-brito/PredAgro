@@ -4,7 +4,7 @@
   background-color: rgba(255, 255, 255, 0.92);
   padding: 20px;
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .card header {
@@ -18,44 +18,44 @@
 }
 
 .card header p {
-  color: var(--slate-600);
-  font-weight: 600;
+  color: var(--slate-700);
 }
 
-.metricGrid {
+.list {
   display: grid;
   gap: 10px;
 }
 
-.metricItem {
+.item {
   border-radius: var(--radius-sm);
   border: 1px solid rgba(149, 168, 162, 0.3);
-  padding: 10px;
+  padding: 12px;
   display: flex;
+  justify-content: space-between;
+  gap: 12px;
   align-items: center;
-  gap: 10px;
+  background-color: var(--white);
 }
 
-.metricIcon {
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-  display: grid;
-  place-items: center;
-  color: var(--green-900);
-  background-color: var(--green-100);
-}
-
-.metricItem p {
-  font-size: 0.88rem;
-  color: var(--slate-500);
-}
-
-.metricItem strong {
+.item strong {
+  display: block;
   color: var(--slate-900);
 }
 
-.card footer {
-  font-size: 0.86rem;
+.item span {
+  color: var(--slate-600);
+  font-size: 0.9rem;
+}
+
+.meta {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  color: var(--slate-600);
+  font-size: 0.85rem;
+}
+
+.emptyState {
   color: var(--slate-500);
+  font-weight: 600;
 }

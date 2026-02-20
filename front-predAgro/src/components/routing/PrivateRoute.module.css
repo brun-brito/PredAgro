@@ -1,0 +1,7 @@
+.loadingScreen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(223, 242, 232, 0.6), rgba(237, 244, 241, 0.9));
+}

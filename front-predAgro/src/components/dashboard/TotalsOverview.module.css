@@ -1,0 +1,45 @@
+.card {
+  border: 1px solid rgba(63, 155, 104, 0.2);
+  border-radius: var(--radius-md);
+  background-color: rgba(255, 255, 255, 0.92);
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.card header {
+  display: grid;
+  gap: 4px;
+}
+
+.card h2 {
+  color: var(--green-900);
+  font-size: 1.2rem;
+}
+
+.card header p {
+  color: var(--slate-700);
+}
+
+.grid {
+  display: grid;
+  gap: 12px;
+}
+
+.item {
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(149, 168, 162, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.item span {
+  color: var(--slate-600);
+  font-weight: 600;
+}
+
+.item strong {
+  color: var(--slate-900);
+}
