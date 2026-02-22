@@ -1,16 +1,22 @@
 import area from '@turf/area';
 import centroid from '@turf/centroid';
 import { AppError } from '../utils/AppError';
-import { requireString } from '../utils/validators';
+import { optionalBoolean, optionalEnum, requireString } from '../utils/validators';
 import * as farmRepository from '../repositories/farmRepository';
 import * as fieldRepository from '../repositories/fieldRepository';
 import * as weatherRepository from '../repositories/weatherRepository';
-import type { Field, FieldGeometry } from '../types/domain';
+import type { DrainageLevel, Field, FieldGeometry, SoilTexture } from '../types/domain';
 
 interface FieldPayload {
   name: string;
-  geometry: FieldGeometry;
+  geometry?: FieldGeometry | null;
+  soilTexture?: SoilTexture;
+  drainage?: DrainageLevel;
+  irrigation?: boolean;
 }
+
+const SOIL_TEXTURES: SoilTexture[] = ['arenoso', 'medio', 'argiloso'];
+const DRAINAGE_LEVELS: DrainageLevel[] = ['bom', 'medio', 'ruim'];
 
 function ensureGeometry(geometry: unknown): FieldGeometry {
   if (!geometry || typeof geometry !== 'object') {
@@ -81,8 +87,11 @@ export async function create(userId: string, farmId: string, payload: FieldPaylo
   }
 
   const name = requireString(payload.name, 'name', 3);
-  const geometry = ensureGeometry(payload.geometry);
-  const metrics = computeMetrics(geometry);
+  const geometry = payload.geometry ? ensureGeometry(payload.geometry) : null;
+  const metrics = geometry ? computeMetrics(geometry) : null;
+  const soilTexture = optionalEnum(payload.soilTexture, SOIL_TEXTURES, 'soilTexture');
+  const drainage = optionalEnum(payload.drainage, DRAINAGE_LEVELS, 'drainage');
+  const irrigation = optionalBoolean(payload.irrigation, 'irrigation');
   const now = new Date().toISOString();
 
   return fieldRepository.create(userId, farmId, {
@@ -90,9 +99,12 @@ export async function create(userId: string, farmId: string, payload: FieldPaylo
     farmId,
     name,
     geometry,
-    areaHa: metrics.areaHa,
-    centroidLat: metrics.centroidLat,
-    centroidLon: metrics.centroidLon,
+    areaHa: metrics ? metrics.areaHa : null,
+    centroidLat: metrics ? metrics.centroidLat : null,
+    centroidLon: metrics ? metrics.centroidLon : null,
+    soilTexture,
+    drainage,
+    irrigation,
     createdAt: now,
     updatedAt: now,
   });
@@ -107,16 +119,22 @@ export async function update(
   const field = await getById(userId, farmId, fieldId);
 
   const name = payload.name ? requireString(payload.name, 'name', 3) : field.name;
-  const geometry = payload.geometry ? ensureGeometry(payload.geometry) : field.geometry;
-  const metrics = payload.geometry ? computeMetrics(geometry) : null;
+  const nextGeometry = payload.geometry ? ensureGeometry(payload.geometry) : field.geometry;
+  const metrics = payload.geometry ? computeMetrics(nextGeometry) : null;
+  const soilTexture = optionalEnum(payload.soilTexture, SOIL_TEXTURES, 'soilTexture') ?? field.soilTexture;
+  const drainage = optionalEnum(payload.drainage, DRAINAGE_LEVELS, 'drainage') ?? field.drainage;
+  const irrigation = payload.irrigation !== undefined ? optionalBoolean(payload.irrigation, 'irrigation') : field.irrigation;
 
   const nextField: Field = {
     ...field,
     name,
-    geometry,
+    geometry: nextGeometry,
     areaHa: metrics ? metrics.areaHa : field.areaHa,
     centroidLat: metrics ? metrics.centroidLat : field.centroidLat,
     centroidLon: metrics ? metrics.centroidLon : field.centroidLon,
+    soilTexture,
+    drainage,
+    irrigation,
     updatedAt: new Date().toISOString(),
   };
 

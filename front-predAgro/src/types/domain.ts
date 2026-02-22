@@ -27,6 +27,9 @@ export interface Farm {
   updatedAt: string;
 }
 
+export type SoilTexture = 'arenoso' | 'medio' | 'argiloso';
+export type DrainageLevel = 'bom' | 'medio' | 'ruim';
+
 export type FieldGeometry = {
   type: 'Polygon' | 'MultiPolygon';
   coordinates: number[][][] | number[][][][];
@@ -36,10 +39,13 @@ export interface Field {
   id: string;
   farmId: string;
   name: string;
-  geometry: FieldGeometry;
-  areaHa: number;
-  centroidLat: number;
-  centroidLon: number;
+  geometry: FieldGeometry | null;
+  areaHa: number | null;
+  centroidLat: number | null;
+  centroidLon: number | null;
+  soilTexture?: SoilTexture;
+  drainage?: DrainageLevel;
+  irrigation?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -97,10 +103,62 @@ export interface DashboardOverview {
 
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 
-export interface PredictionSummary {
+export interface CropStageRule {
+  id: string;
+  name: string;
+  durationShare: number;
+  weight: number;
+}
+
+export interface CropProfile {
+  id: string;
+  name: string;
+  description: string;
+  stages: CropStageRule[];
+}
+
+export interface PlantingPlan {
+  id: string;
   fieldId: string;
-  riskLevel: RiskLevel;
+  farmId: string;
+  cropId: string;
+  startDate: string;
+  endDate: string;
+  areaHa: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type RiskCategoryId =
+  | 'water_stress'
+  | 'water_excess'
+  | 'heat_stress'
+  | 'cold_stress'
+  | 'wind_risk'
+  | 'pest_disease'
+  | 'soil_suitability';
+
+export interface RiskCategoryResult {
+  id: RiskCategoryId;
+  label: string;
+  score: number;
+  level: RiskLevel;
   reasons: string[];
   recommendations: string[];
+}
+
+export interface PlanRiskAssessment {
+  planId: string;
+  fieldId: string;
+  cropId: string;
+  cropName: string;
+  startDate: string;
+  endDate: string;
+  riskLevel: RiskLevel;
+  score: number;
+  categories: RiskCategoryResult[];
+  mode: 'forecast' | 'mixed' | 'historical';
+  confidence: 'high' | 'medium' | 'low';
+  notes: string[];
   generatedAt: string;
 }

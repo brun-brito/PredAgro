@@ -1,0 +1,12 @@
+import { Router } from 'express';
+import { asyncHandler } from '../utils/asyncHandler';
+import * as planController from '../controllers/planController';
+
+const planRoutes = Router();
+
+planRoutes.get('/farms/:farmId/fields/:fieldId/plans', asyncHandler(planController.listPlans));
+planRoutes.post('/farms/:farmId/fields/:fieldId/plans', asyncHandler(planController.createPlan));
+planRoutes.get('/farms/:farmId/fields/:fieldId/plans/:planId', asyncHandler(planController.getPlan));
+planRoutes.get('/farms/:farmId/fields/:fieldId/plans/:planId/risk', asyncHandler(planController.getPlanRisk));
+
+export { planRoutes };

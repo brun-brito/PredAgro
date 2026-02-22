@@ -31,11 +31,23 @@ export function DashboardPage() {
         return;
       }
 
+      const shouldSkipCache = refreshKey > 0;
+
+      if (!shouldSkipCache) {
+        const cached = dashboardService.getCachedOverview(token);
+        if (cached && isMounted) {
+          setOverview(cached);
+          setHasApiError(false);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       setIsLoading(true);
       setHasApiError(false);
 
       try {
-        const response = await dashboardService.getOverview(token);
+        const response = await dashboardService.getOverview(token, { skipCache: shouldSkipCache });
 
         if (isMounted) {
           setOverview(response);

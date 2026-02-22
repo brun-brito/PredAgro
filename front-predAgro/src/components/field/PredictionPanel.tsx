@@ -1,9 +1,9 @@
-import type { PredictionSummary } from '../../types/domain';
+import type { PlanRiskAssessment } from '../../types/domain';
 import { LoadingState } from '../ui/LoadingState';
 import styles from './PredictionPanel.module.css';
 
 interface PredictionPanelProps {
-  summary: PredictionSummary | null;
+  assessment: PlanRiskAssessment | null;
   isLoading: boolean;
 }
 
@@ -13,39 +13,99 @@ const riskLabel = {
   HIGH: 'Alto',
 };
 
-export function PredictionPanel({ summary, isLoading }: PredictionPanelProps) {
+const modeLabel = {
+  forecast: 'Previsão curta',
+  mixed: 'Previsão + tendência',
+  historical: 'Tendência histórica',
+};
+
+const confidenceLabel = {
+  high: 'Alta',
+  medium: 'Média',
+  low: 'Baixa',
+};
+
+export function PredictionPanel({ assessment, isLoading }: PredictionPanelProps) {
+  const notes = assessment?.notes ?? [];
+  const categories = assessment?.categories ?? [];
+  const mode = assessment?.mode ?? 'forecast';
+  const confidence = assessment?.confidence ?? 'high';
+
   return (
     <article className={styles.card}>
       <header>
-        <h2>Risco climático</h2>
-        <p>Resumo interpretável para decisão rápida.</p>
+        <h2>Risco climático por cultura</h2>
+        <p>Resultado baseado no plano de safra e no clima previsto.</p>
       </header>
 
       {isLoading && <LoadingState label="Carregando análise..." size="sm" />}
 
-      {!isLoading && summary && (
+      {!isLoading && !assessment && (
+        <p>Crie um plano de safra para gerar a análise de risco.</p>
+      )}
+
+      {!isLoading && assessment && (
         <>
           <div className={styles.riskLevel}>
             <span>Nível de risco</span>
-            <strong className={styles[summary.riskLevel.toLowerCase()]}>{riskLabel[summary.riskLevel]}</strong>
+            <strong className={styles[assessment.riskLevel.toLowerCase()]}>
+              {riskLabel[assessment.riskLevel]}
+            </strong>
           </div>
 
           <div className={styles.section}>
-            <h3>Motivos</h3>
-            <ul>
-              {summary.reasons.map((reason) => (
-                <li key={reason}>{reason}</li>
-              ))}
-            </ul>
+            <h3>Resumo do plano</h3>
+            <div className={styles.planSummary}>
+              <span>Cultura: {assessment.cropName}</span>
+              <span>
+                Período: {assessment.startDate} até {assessment.endDate}
+              </span>
+              <span>Score geral: {assessment.score.toFixed(0)}</span>
+              <span>Tipo de análise: {modeLabel[mode]}</span>
+              <span>Confiabilidade: {confidenceLabel[confidence]}</span>
+            </div>
           </div>
 
+          {notes.length > 0 && (
+            <div className={styles.section}>
+              <h3>Observações</h3>
+              <ul>
+                {notes.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className={styles.section}>
-            <h3>Recomendações</h3>
-            <ul>
-              {summary.recommendations.map((recommendation) => (
-                <li key={recommendation}>{recommendation}</li>
+            <h3>Riscos por categoria</h3>
+            <div className={styles.categoryList}>
+              {[...categories].sort((a, b) => b.score - a.score).map((category) => (
+                <div key={category.id} className={styles.categoryItem}>
+                  <div className={styles.categoryHeader}>
+                    <strong>{category.label}</strong>
+                    <span className={`${styles.badge} ${styles[category.level.toLowerCase()]}`}>
+                      {riskLabel[category.level]}
+                    </span>
+                    <span className={styles.score}>{category.score.toFixed(0)}</span>
+                  </div>
+                  {category.reasons.length > 0 && (
+                    <ul>
+                      {category.reasons.map((reason) => (
+                        <li key={reason}>{reason}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {category.recommendations.length > 0 && (
+                    <ul className={styles.recommendations}>
+                      {category.recommendations.map((recommendation) => (
+                        <li key={recommendation}>{recommendation}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </>
       )}

@@ -17,6 +17,12 @@
   align-items: flex-start;
 }
 
+.headerActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -34,21 +40,31 @@
   color: var(--slate-700);
 }
 
-.backLink {
+.outlineButton {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   border-radius: 999px;
   padding: 10px 14px;
   border: 1px solid rgba(63, 155, 104, 0.3);
+  background: transparent;
   color: var(--green-900);
   font-weight: 600;
+  cursor: pointer;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--green-700), var(--teal-700));
+  color: var(--white);
+  border: 0;
+  cursor: pointer;
 }
 
 .card {
@@ -58,40 +74,6 @@
   padding: 22px;
   display: grid;
   gap: 16px;
-}
-
-.form {
-  display: grid;
-  gap: 12px;
-}
-
-.form label {
-  display: grid;
-  gap: 6px;
-  color: var(--slate-700);
-  font-weight: 600;
-}
-
-.form input {
-  border: 1px solid rgba(149, 168, 162, 0.5);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 12px;
-}
-
-.form button {
-  border: 0;
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--green-700), var(--teal-700));
-  color: var(--white);
-  cursor: pointer;
 }
 
 .feedback {
@@ -118,6 +100,12 @@
   background-color: var(--white);
 }
 
+.listActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .listItem strong {
   display: block;
   color: var(--slate-900);
@@ -141,10 +129,6 @@
 }
 
 @media (max-width: 960px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-
   .header {
     flex-direction: column;
   }

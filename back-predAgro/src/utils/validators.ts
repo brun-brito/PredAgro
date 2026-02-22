@@ -45,6 +45,36 @@ export function optionalString(value: unknown) {
   return String(value).trim();
 }
 
+export function optionalEnum<T extends string>(value: unknown, allowed: readonly T[], fieldName: string) {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  const normalized = String(value).trim() as T;
+
+  if (!allowed.includes(normalized)) {
+    throw new AppError(`Campo ${fieldName} inválido.`, 400);
+  }
+
+  return normalized;
+}
+
+export function optionalBoolean(value: unknown, fieldName: string) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (value === 'true' || value === 'false') {
+    return value === 'true';
+  }
+
+  throw new AppError(`Campo ${fieldName} inválido.`, 400);
+}
+
 export function requireStringList(value: unknown, fieldName: string) {
   if (!Array.isArray(value)) {
     throw new AppError(`Campo ${fieldName} deve ser uma lista.`, 400);

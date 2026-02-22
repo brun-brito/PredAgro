@@ -17,7 +17,7 @@ export async function getOverview(userId: string): Promise<DashboardOverview> {
   const totals = {
     farms: farms.length,
     fields: fields.length,
-    areaHa: Number(fields.reduce((sum, field) => sum + field.areaHa, 0).toFixed(2)),
+    areaHa: Number(fields.reduce((sum, field) => sum + (field.areaHa ?? 0), 0).toFixed(2)),
   };
 
   const alerts: AlertItem[] = [];
@@ -31,7 +31,7 @@ export async function getOverview(userId: string): Promise<DashboardOverview> {
       fieldName: field.name,
       farmId: field.farmId,
       farmName: farmMap.get(field.farmId),
-      areaHa: field.areaHa,
+      areaHa: field.areaHa ?? 0,
       lastSnapshotAt: latestSnapshot?.fetchedAt,
     });
 

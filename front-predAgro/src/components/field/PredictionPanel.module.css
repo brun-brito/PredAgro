@@ -67,3 +67,50 @@
   padding-left: 18px;
   color: var(--slate-700);
 }
+
+.planSummary {
+  display: grid;
+  gap: 6px;
+  color: var(--slate-700);
+  font-weight: 600;
+}
+
+.categoryList {
+  display: grid;
+  gap: 12px;
+}
+
+.categoryItem {
+  border: 1px solid rgba(149, 168, 162, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  background-color: var(--white);
+}
+
+.categoryHeader {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  border: 1px solid rgba(149, 168, 162, 0.4);
+}
+
+.score {
+  font-weight: 700;
+  color: var(--slate-700);
+}
+
+.recommendations {
+  margin-top: 6px;
+  color: var(--slate-600);
+}

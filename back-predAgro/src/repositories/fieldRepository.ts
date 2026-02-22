@@ -17,6 +17,12 @@ function parseGeometry(geometryJson: string) {
 function toFirestoreField(fieldInput: Field) {
   const { geometry, ...rest } = fieldInput;
 
+  if (!geometry) {
+    return {
+      ...rest,
+    };
+  }
+
   return {
     ...rest,
     geometryJson: JSON.stringify(geometry),
@@ -30,6 +36,9 @@ function fromFirestoreField(data: FirestoreFieldDoc): Field {
     return {
       ...rest,
       geometry: parseGeometry(geometryJson),
+      areaHa: rest.areaHa ?? null,
+      centroidLat: rest.centroidLat ?? null,
+      centroidLon: rest.centroidLon ?? null,
     };
   }
 
@@ -37,10 +46,19 @@ function fromFirestoreField(data: FirestoreFieldDoc): Field {
     return {
       ...rest,
       geometry: legacyGeometry,
+      areaHa: rest.areaHa ?? null,
+      centroidLat: rest.centroidLat ?? null,
+      centroidLon: rest.centroidLon ?? null,
     };
   }
 
-  throw new Error('Talhão sem geometria persistida.');
+  return {
+    ...rest,
+    geometry: null,
+    areaHa: rest.areaHa ?? null,
+    centroidLat: rest.centroidLat ?? null,
+    centroidLon: rest.centroidLon ?? null,
+  };
 }
 
 function fieldsCollection(userId: string, farmId: string) {

@@ -1,26 +1,16 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa6';
-import { ApiError } from '../services/httpClient';
 import { farmService } from '../services/farmService';
 import { fieldService } from '../services/fieldService';
-import { FieldMapEditor } from '../components/maps/FieldMapEditor';
 import { LoadingState } from '../components/ui/LoadingState';
+import { FarmFormModal } from '../components/forms/FarmFormModal';
+import { FieldFormModal } from '../components/forms/FieldFormModal';
 import { useAuth } from '../hooks/useAuth';
-import type { Field, FieldGeometry, Farm } from '../types/domain';
+import { ApiError } from '../services/httpClient';
+import { formatNumber } from '../utils/formatters';
+import type { Field, Farm } from '../types/domain';
 import styles from './FarmDetailsPage.module.css';
-
-interface FieldFormValues {
-  name: string;
-  geometry: FieldGeometry | null;
-  areaHa: number | null;
-}
-
-const initialFieldForm: FieldFormValues = {
-  name: '',
-  geometry: null,
-  areaHa: null,
-};
 
 export function FarmDetailsPage() {
   const { farmId } = useParams();
@@ -28,10 +18,11 @@ export function FarmDetailsPage() {
 
   const [farm, setFarm] = useState<Farm | null>(null);
   const [fields, setFields] = useState<Field[]>([]);
-  const [formValues, setFormValues] = useState<FieldFormValues>(initialFieldForm);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFarmModalOpen, setIsFarmModalOpen] = useState(false);
+  const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
+  const [editingField, setEditingField] = useState<Field | null>(null);
 
   const farmIdValue = useMemo(() => farmId ?? '', [farmId]);
 
@@ -46,7 +37,32 @@ export function FarmDetailsPage() {
         return;
       }
 
+      const cachedFarm = farmService.getCachedById(token, farmIdValue);
+      const cachedFields = fieldService.getCachedListByFarm(token, farmIdValue);
+
+      if (cachedFarm && isMounted) {
+        setFarm(cachedFarm.farm);
+      }
+
+      if (cachedFields && isMounted) {
+        setFields(cachedFields.fields);
+      }
+
+      if (cachedFarm && cachedFields) {
+        if (isMounted) {
+          setFeedback(null);
+          setIsLoading(false);
+        }
+        return;
+      }
+
       setIsLoading(true);
+      if (!cachedFarm) {
+        setFarm(null);
+      }
+      if (!cachedFields) {
+        setFields([]);
+      }
 
       try {
         const [farmResponse, fieldsResponse] = await Promise.all([
@@ -57,10 +73,11 @@ export function FarmDetailsPage() {
         if (isMounted) {
           setFarm(farmResponse.farm);
           setFields(fieldsResponse.fields);
+          setFeedback(null);
         }
-      } catch {
+      } catch (error) {
         if (isMounted) {
-          setFeedback('Não foi possível carregar os dados da fazenda.');
+          setFeedback(error instanceof ApiError ? error.message : 'Não foi possível carregar os dados da fazenda.');
         }
       } finally {
         if (isMounted) {
@@ -76,46 +93,43 @@ export function FarmDetailsPage() {
     };
   }, [token, farmIdValue]);
 
-  function updateGeometry(geometry: FieldGeometry | null, areaHa: number | null) {
-    setFormValues((current) => ({
-      ...current,
-      geometry,
-      areaHa,
-    }));
+  function openFarmModal() {
+    if (!farm) {
+      return;
+    }
+    setIsFarmModalOpen(true);
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function openFieldCreateModal() {
+    setEditingField(null);
+    setIsFieldModalOpen(true);
+  }
 
-    if (!token || !farmIdValue) {
-      return;
-    }
+  function openFieldEditModal(field: Field) {
+    setEditingField(field);
+    setIsFieldModalOpen(true);
+  }
 
-    if (!formValues.geometry) {
-      setFeedback('Desenhe o polígono do talhão antes de salvar.');
-      return;
-    }
+  function handleFarmModalClose() {
+    setIsFarmModalOpen(false);
+  }
 
-    setIsSubmitting(true);
-    setFeedback(null);
+  function handleFieldModalClose() {
+    setIsFieldModalOpen(false);
+    setEditingField(null);
+  }
 
-    try {
-      const response = await fieldService.create(token, farmIdValue, {
-        name: formValues.name,
-        geometry: formValues.geometry,
-      });
+  function handleFarmSaved(nextFarm: Farm) {
+    setFarm(nextFarm);
+  }
 
-      setFields((current) => [response.field, ...current]);
-      setFormValues(initialFieldForm);
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setFeedback(error.message);
-      } else {
-        setFeedback('Não foi possível salvar o talhão.');
+  function handleFieldSaved(nextField: Field, mode: 'create' | 'update') {
+    setFields((current) => {
+      if (mode === 'create') {
+        return [nextField, ...current];
       }
-    } finally {
-      setIsSubmitting(false);
-    }
+      return current.map((item) => (item.id === nextField.id ? nextField : item));
+    });
   }
 
   return (
@@ -127,71 +141,79 @@ export function FarmDetailsPage() {
             <h1>{farm?.name ?? 'Fazenda selecionada'}</h1>
             <p className={styles.subtitle}>Cadastre e acompanhe os talhões da propriedade.</p>
           </div>
-          <Link to="/fazendas" className={styles.backLink}>
-            <FaArrowLeft />
-            Voltar para fazendas
-          </Link>
+          <div className={styles.headerActions}>
+            <button type="button" onClick={openFieldCreateModal} className={styles.primaryButton}>
+              + Cadastrar talhão
+            </button>
+            <button type="button" onClick={openFarmModal} className={styles.outlineButton} disabled={!farm}>
+              Editar fazenda
+            </button>
+            <Link to="/fazendas" className={styles.outlineButton}>
+              <FaArrowLeft />
+              Voltar para fazendas
+            </Link>
+          </div>
         </header>
 
-        <section className={styles.contentGrid}>
-          <div className={styles.card}>
-            <h2>Novo talhão</h2>
-            <form className={styles.form} onSubmit={handleSubmit}>
-              <label>
-                Nome do talhão
-                <input
-                  type="text"
-                  value={formValues.name}
-                  onChange={(event) =>
-                    setFormValues((current) => ({ ...current, name: event.target.value }))
-                  }
-                  required
-                />
-              </label>
+        {feedback && <p className={styles.feedback}>{feedback}</p>}
 
-              <FieldMapEditor geometry={formValues.geometry} onGeometryChange={updateGeometry} />
+        <section className={styles.card}>
+          <h2>Talhões cadastrados</h2>
+          {isLoading ? (
+            <div className={styles.loadingBlock}>
+              <LoadingState label="Carregando talhões..." />
+            </div>
+          ) : (
+            <div className={styles.list}>
+              {fields.map((field) => (
+                <div key={field.id} className={styles.listItem}>
+                  <div>
+                    <strong>{field.name}</strong>
+                    <span>
+                      {field.areaHa !== null ? `${formatNumber(field.areaHa, 2)} ha` : 'Sem delimitação'}
+                    </span>
+                  </div>
+                  <div className={styles.listActions}>
+                    <Link to={`/fazendas/${farmIdValue}/talhoes/${field.id}`} className={styles.outlineButton}>
+                      Abrir
+                    </Link>
+                    <button type="button" onClick={() => openFieldEditModal(field)} className={styles.outlineButton}>
+                      Editar
+                    </button>
+                    <Link
+                      to={`/fazendas/${farmIdValue}/talhoes/${field.id}/delimitacao`}
+                      className={styles.outlineButton}
+                    >
+                      Delimitar
+                    </Link>
+                    <Link
+                      to={`/fazendas/${farmIdValue}/talhoes/${field.id}/planejamento`}
+                      className={styles.outlineButton}
+                    >
+                      Planejar
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-              <div className={styles.formFooter}>
-                <span>
-                  Área estimada: {formValues.areaHa ? `${formValues.areaHa.toFixed(2)} ha` : 'Não definida'}
-                </span>
-                <button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Salvando...' : 'Salvar talhão'}
-                </button>
-              </div>
-
-              {feedback && <p className={styles.feedback}>{feedback}</p>}
-            </form>
-          </div>
-
-          <div className={styles.card}>
-            <h2>Talhões cadastrados</h2>
-            {isLoading ? (
-              <div className={styles.loadingBlock}>
-                <LoadingState label="Carregando talhões..." />
-              </div>
-            ) : (
-              <div className={styles.list}>
-                {fields.map((field) => (
-                  <Link
-                    key={field.id}
-                    to={`/fazendas/${farmIdValue}/talhoes/${field.id}`}
-                    className={styles.listItem}
-                  >
-                    <div>
-                      <strong>{field.name}</strong>
-                      <span>{field.areaHa.toFixed(2)} ha</span>
-                    </div>
-                    <span>Detalhes</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            {!isLoading && fields.length === 0 && <p className={styles.emptyState}>Nenhum talhão cadastrado.</p>}
-          </div>
+          {!isLoading && fields.length === 0 && <p className={styles.emptyState}>Nenhum talhão cadastrado.</p>}
         </section>
       </section>
+      <FarmFormModal
+        isOpen={isFarmModalOpen}
+        farm={farm}
+        onClose={handleFarmModalClose}
+        onSaved={handleFarmSaved}
+      />
+      <FieldFormModal
+        isOpen={isFieldModalOpen}
+        farmId={farmIdValue}
+        field={editingField}
+        onClose={handleFieldModalClose}
+        onSaved={handleFieldSaved}
+      />
     </main>
   );
 }

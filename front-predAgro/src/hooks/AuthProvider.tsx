@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type PropsWithChildren } fro
 import { authService } from '../services/authService';
 import type { RegisterPayload, User } from '../types/domain';
 import { AuthContext, type AuthContextData } from './auth-context';
+import { clearCache } from '../utils/cache';
 
 const SESSION_STORAGE_KEY = 'predagro.session';
 
@@ -57,6 +58,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const signOut = useCallback(() => {
     setToken(null);
     setUser(null);
+    clearCache();
   }, []);
 
   const contextValue = useMemo<AuthContextData>(

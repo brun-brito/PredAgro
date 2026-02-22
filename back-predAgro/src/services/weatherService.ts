@@ -93,12 +93,20 @@ export async function getForecast(
   options?: { days?: number; force?: boolean }
 ): Promise<WeatherSnapshot> {
   const field = await fieldService.getById(userId, farmId, fieldId);
-  const days = Math.min(Math.max(options?.days ?? 7, 1), 14);
+  if (field.centroidLat === null || field.centroidLon === null) {
+    throw new AppError('Talhão sem delimitação. Defina o polígono antes de consultar o clima.', 400);
+  }
+  const days = Math.min(Math.max(options?.days ?? 7, 1), 16);
 
   const latest = await weatherRepository.findLatestSnapshot(userId, field.farmId, field.id);
   const now = Date.now();
 
-  if (!options?.force && latest && new Date(latest.expiresAt).getTime() > now) {
+  if (
+    !options?.force &&
+    latest &&
+    latest.days.length >= days &&
+    new Date(latest.expiresAt).getTime() > now
+  ) {
     return latest;
   }
 

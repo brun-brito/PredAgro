@@ -42,9 +42,9 @@
   border-radius: 999px;
   padding: 10px 14px;
   border: 1px solid rgba(63, 155, 104, 0.3);
-  background: transparent;
   color: var(--green-900);
   font-weight: 600;
+  background: transparent;
   cursor: pointer;
 }
 
@@ -57,14 +57,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   border-radius: 999px;
   padding: 10px 16px;
   font-weight: 700;
   background: linear-gradient(135deg, var(--green-700), var(--teal-700));
   color: var(--white);
   border: 0;
-  cursor: pointer;
+}
+
+.grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .card {
@@ -73,7 +77,8 @@
   border: 1px solid rgba(63, 155, 104, 0.2);
   padding: 22px;
   display: grid;
-  gap: 16px;
+  gap: 12px;
+  align-content: start;
 }
 
 .feedback {
@@ -82,43 +87,6 @@
   border: 1px solid rgba(191, 65, 47, 0.35);
   background-color: rgba(191, 65, 47, 0.08);
   color: var(--danger);
-}
-
-.list {
-  display: grid;
-  gap: 10px;
-}
-
-.listItem {
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(149, 168, 162, 0.3);
-  padding: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  background-color: var(--white);
-}
-
-.listActions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.listItem strong {
-  display: block;
-  color: var(--slate-900);
-}
-
-.listItem span {
-  color: var(--slate-600);
-  font-size: 0.9rem;
-}
-
-.emptyState {
-  color: var(--slate-500);
-  font-weight: 600;
 }
 
 .loadingBlock {
@@ -131,5 +99,9 @@
 @media (max-width: 980px) {
   .header {
     flex-direction: column;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
   }
 }
