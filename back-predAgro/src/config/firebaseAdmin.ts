@@ -11,6 +11,10 @@ type ServiceAccount = admin.ServiceAccount & {
   client_id?: string;
 };
 
+let appInstance: admin.app.App | null = null;
+let firestoreInstance: FirebaseFirestore.Firestore | null = null;
+let authInstance: admin.auth.Auth | null = null;
+
 function parseServiceAccount(rawCredential: string, sourceLabel: string): ServiceAccount {
   try {
     return JSON.parse(rawCredential) as ServiceAccount;
@@ -95,25 +99,70 @@ function loadServiceAccount() {
   );
 }
 
-function initializeFirebaseApp() {
+function getFirebaseApp() {
+  if (appInstance) {
+    return appInstance;
+  }
+
   if (admin.apps.length > 0) {
-    return admin.app();
+    appInstance = admin.app();
+    return appInstance;
   }
 
   const serviceAccount = loadServiceAccount();
 
-  return admin.initializeApp({
+  appInstance = admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     projectId: serviceAccount.projectId,
   });
+
+  return appInstance;
 }
 
-const firebaseApp = initializeFirebaseApp();
-const firebaseFirestore = firebaseApp.firestore();
+function getFirebaseFirestore() {
+  if (firestoreInstance) {
+    return firestoreInstance;
+  }
 
-firebaseFirestore.settings({
-  ignoreUndefinedProperties: true,
+  firestoreInstance = getFirebaseApp().firestore();
+  firestoreInstance.settings({
+    ignoreUndefinedProperties: true,
+  });
+
+  return firestoreInstance;
+}
+
+function getFirebaseAuth() {
+  if (authInstance) {
+    return authInstance;
+  }
+
+  authInstance = getFirebaseApp().auth();
+  return authInstance;
+}
+
+const firebaseApp = new Proxy({} as admin.app.App, {
+  get(_target, prop) {
+    const app = getFirebaseApp();
+    const value = app[prop as keyof admin.app.App];
+    return typeof value === 'function' ? value.bind(app) : value;
+  },
 });
 
-export { firebaseApp, firebaseFirestore };
-export const firebaseAuth = firebaseApp.auth();
+const firebaseFirestore = new Proxy({} as FirebaseFirestore.Firestore, {
+  get(_target, prop) {
+    const firestore = getFirebaseFirestore();
+    const value = firestore[prop as keyof FirebaseFirestore.Firestore];
+    return typeof value === 'function' ? value.bind(firestore) : value;
+  },
+});
+
+const firebaseAuth = new Proxy({} as admin.auth.Auth, {
+  get(_target, prop) {
+    const auth = getFirebaseAuth();
+    const value = auth[prop as keyof admin.auth.Auth];
+    return typeof value === 'function' ? value.bind(auth) : value;
+  },
+});
+
+export { firebaseApp, firebaseFirestore, firebaseAuth, getFirebaseApp, getFirebaseFirestore, getFirebaseAuth };
