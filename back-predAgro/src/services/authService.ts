@@ -6,6 +6,7 @@ import * as userRepository from '../repositories/userRepository';
 import type { User } from '../types/domain';
 
 const FIREBASE_AUTH_BASE_URL = 'https://identitytoolkit.googleapis.com/v1/accounts';
+const FIREBASE_SECURE_TOKEN_BASE_URL = 'https://securetoken.googleapis.com/v1/token';
 
 const firebaseErrorMap: Record<string, { statusCode: number; message: string }> = {
   EMAIL_EXISTS: { statusCode: 409, message: 'Já existe usuário com este e-mail.' },
@@ -14,6 +15,10 @@ const firebaseErrorMap: Record<string, { statusCode: number; message: string }> 
   INVALID_LOGIN_CREDENTIALS: { statusCode: 401, message: 'Credenciais inválidas.' },
   USER_DISABLED: { statusCode: 403, message: 'Conta de usuário desativada.' },
   WEAK_PASSWORD: { statusCode: 400, message: 'Senha muito fraca. Use ao menos 6 caracteres.' },
+  TOKEN_EXPIRED: { statusCode: 401, message: 'Sessão expirada. Entre novamente.' },
+  INVALID_REFRESH_TOKEN: { statusCode: 401, message: 'Sessão expirada. Entre novamente.' },
+  USER_NOT_FOUND: { statusCode: 401, message: 'Sessão expirada. Entre novamente.' },
+  PROJECT_NUMBER_MISMATCH: { statusCode: 401, message: 'Sessão inválida para este projeto.' },
 };
 
 interface FirebaseAuthErrorResponse {
@@ -25,11 +30,19 @@ interface FirebaseAuthErrorResponse {
 interface FirebaseAuthSuccessResponse {
   localId: string;
   idToken: string;
+  refreshToken: string;
+}
+
+interface FirebaseSecureTokenSuccessResponse {
+  user_id: string;
+  id_token: string;
+  refresh_token: string;
 }
 
 export interface AuthResponse {
   user: User;
   token: string;
+  refreshToken?: string;
 }
 
 export interface AuthCredentials {
@@ -43,6 +56,10 @@ export interface ForgotPasswordPayload {
 
 export interface GoogleAuthPayload {
   idToken: string;
+}
+
+export interface RefreshTokenPayload {
+  refreshToken: string;
 }
 
 export interface RegisterPayload extends AuthCredentials {
@@ -96,6 +113,37 @@ async function requestFirebaseAuth(action: string, payload: Record<string, unkno
 
   const body = (await response.json().catch(() => ({}))) as FirebaseAuthErrorResponse &
     FirebaseAuthSuccessResponse;
+
+  if (!response.ok) {
+    const mappedError = mapFirebaseError(body);
+    throw new AppError(mappedError.message, mappedError.statusCode, body.error ?? null);
+  }
+
+  return body;
+}
+
+async function requestFirebaseSecureToken(refreshToken: string) {
+  ensureFirebaseWebApiKey();
+
+  let response: Response;
+
+  try {
+    response = await fetch(`${FIREBASE_SECURE_TOKEN_BASE_URL}?key=${config.firebaseWebApiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+      }).toString(),
+    });
+  } catch {
+    throw new AppError('Falha de comunicação com o Firebase Auth.', 502);
+  }
+
+  const body = (await response.json().catch(() => ({}))) as FirebaseAuthErrorResponse &
+    FirebaseSecureTokenSuccessResponse;
 
   if (!response.ok) {
     const mappedError = mapFirebaseError(body);
@@ -159,6 +207,7 @@ export async function register(payload: RegisterPayload): Promise<AuthResponse> 
   return {
     user,
     token: signUpResponse.idToken,
+    refreshToken: signUpResponse.refreshToken,
   };
 }
 
@@ -183,6 +232,7 @@ export async function login(payload: AuthCredentials): Promise<AuthResponse> {
   return {
     user,
     token: signInResponse.idToken,
+    refreshToken: signInResponse.refreshToken,
   };
 }
 
@@ -220,6 +270,25 @@ export async function authenticateWithGoogle(payload: GoogleAuthPayload): Promis
   return {
     user,
     token: idToken,
+  };
+}
+
+export async function refreshSession(payload: RefreshTokenPayload): Promise<AuthResponse> {
+  const refreshToken = requireString(payload.refreshToken, 'refreshToken', 10);
+
+  const refreshResponse = await requestFirebaseSecureToken(refreshToken);
+  const authUser = await firebaseAuth.getUser(refreshResponse.user_id);
+
+  const user = await syncUser({
+    id: authUser.uid,
+    name: authUser.displayName ?? 'Usuário PredAgro',
+    email: authUser.email ?? '',
+  });
+
+  return {
+    user,
+    token: refreshResponse.id_token,
+    refreshToken: refreshResponse.refresh_token,
   };
 }
 

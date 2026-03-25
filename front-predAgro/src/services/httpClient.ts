@@ -2,6 +2,11 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3333
 
 interface RequestOptions extends RequestInit {
   token?: string;
+  skipAuthRetry?: boolean;
+}
+
+interface ApiClientAuthHandlers {
+  refreshAccessToken: () => Promise<string | null>;
 }
 
 export class ApiError extends Error {
@@ -16,8 +21,31 @@ export class ApiError extends Error {
   }
 }
 
+let authHandlers: ApiClientAuthHandlers | null = null;
+let refreshPromise: Promise<string | null> | null = null;
+
+export function configureApiClientAuth(nextHandlers: ApiClientAuthHandlers | null) {
+  authHandlers = nextHandlers;
+}
+
+async function refreshAccessToken() {
+  if (!authHandlers) {
+    return null;
+  }
+
+  if (!refreshPromise) {
+    refreshPromise = authHandlers
+      .refreshAccessToken()
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { token, headers, ...rest } = options;
+  const { token, headers, skipAuthRetry = false, ...rest } = options;
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,
@@ -30,6 +58,22 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   const contentType = response.headers.get('content-type') ?? '';
   const payload = contentType.includes('application/json') ? await response.json() : null;
+
+  if (response.status === 401 && token && !skipAuthRetry && authHandlers) {
+    try {
+      const nextToken = await refreshAccessToken();
+
+      if (nextToken) {
+        return request<T>(path, {
+          ...options,
+          token: nextToken,
+          skipAuthRetry: true,
+        });
+      }
+    } catch {
+      // Preserve the original API error when session renewal fails.
+    }
+  }
 
   if (!response.ok) {
     throw new ApiError(payload?.message ?? 'Erro ao processar requisição.', response.status, payload);

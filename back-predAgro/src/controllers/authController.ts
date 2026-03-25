@@ -16,6 +16,11 @@ export async function authenticateWithGoogle(req: Request, res: Response) {
   res.status(200).json(response);
 }
 
+export async function refreshSession(req: Request, res: Response) {
+  const response = await authService.refreshSession(req.body);
+  res.status(200).json(response);
+}
+
 export async function forgotPassword(req: Request, res: Response) {
   const response = await authService.forgotPassword(req.body);
   res.status(200).json(response);

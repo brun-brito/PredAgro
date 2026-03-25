@@ -3,10 +3,12 @@ import {
   GoogleAuthProvider,
   browserLocalPersistence,
   getAuth,
+  onAuthStateChanged,
   setPersistence,
   signInWithPopup,
   signOut,
   type Auth,
+  type User,
 } from 'firebase/auth';
 
 const FIREBASE_APP_NAME = 'predagro-web';
@@ -51,6 +53,33 @@ async function ensurePersistence() {
   await persistencePromise;
 }
 
+async function waitForAuthenticatedUser(auth: Auth) {
+  if (auth.currentUser) {
+    return auth.currentUser;
+  }
+
+  return new Promise<User | null>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      unsubscribe();
+      resolve(auth.currentUser);
+    }, 3000);
+
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => {
+        window.clearTimeout(timeoutId);
+        unsubscribe();
+        resolve(user);
+      },
+      (error) => {
+        window.clearTimeout(timeoutId);
+        unsubscribe();
+        reject(error);
+      }
+    );
+  });
+}
+
 function mapGoogleAuthError(error: unknown) {
   const code = typeof error === 'object' && error && 'code' in error ? String(error.code) : '';
 
@@ -92,10 +121,27 @@ export async function authenticateWithGooglePopup() {
     const result = await signInWithPopup(auth, provider);
     return {
       idToken: await result.user.getIdToken(),
+      refreshToken: result.user.refreshToken,
     };
   } catch (error) {
     throw new Error(mapGoogleAuthError(error));
   }
+}
+
+export async function refreshGoogleSession() {
+  const auth = getFirebaseAuthClient();
+
+  await ensurePersistence();
+
+  const currentUser = auth.currentUser ?? (await waitForAuthenticatedUser(auth));
+  if (!currentUser) {
+    throw new Error('Sessão Google não encontrada. Entre novamente para continuar.');
+  }
+
+  return {
+    idToken: await currentUser.getIdToken(true),
+    refreshToken: currentUser.refreshToken,
+  };
 }
 
 export async function clearFirebaseAuthSession() {
