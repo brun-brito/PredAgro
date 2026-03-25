@@ -1,4 +1,5 @@
 import { firebaseFirestore } from '../config/firebaseAdmin';
+import { deleteDocumentTree } from './firestoreDelete';
 import type { Farm } from '../types/domain';
 
 function farmsCollection(userId: string) {
@@ -45,5 +46,5 @@ export async function update(userId: string, farmId: string, farmInput: Partial<
 }
 
 export async function remove(userId: string, farmId: string): Promise<void> {
-  await farmsCollection(userId).doc(farmId).delete();
+  await deleteDocumentTree(farmsCollection(userId).doc(farmId));
 }

@@ -67,6 +67,8 @@ export const fieldService = {
     invalidateCache(fieldItemKey(token, farmId, fieldId));
     invalidateCache(fieldListKey(token, farmId));
     invalidateCache(`fields:forecast:${token}:${farmId}:${fieldId}`);
+    invalidateCache(`plans:list:${token}:${farmId}:${fieldId}`);
+    invalidateCache(`plans:risk:${token}:${farmId}:${fieldId}`);
     invalidateCache(dashboardOverviewKey(token));
   },
   getForecast: async (token: string, farmId: string, fieldId: string, days = 16) => {

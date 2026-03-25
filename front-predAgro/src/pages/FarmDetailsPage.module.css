@@ -53,6 +53,25 @@
   cursor: not-allowed;
 }
 
+.dangerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid rgba(191, 65, 47, 0.3);
+  background: rgba(191, 65, 47, 0.08);
+  color: var(--danger);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dangerButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .primaryButton {
   display: inline-flex;
   align-items: center;
@@ -104,6 +123,7 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .listItem strong {

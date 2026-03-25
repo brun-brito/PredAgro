@@ -12,12 +12,13 @@ import styles from './FarmsPage.module.css';
 
 export function FarmsPage() {
   const { token } = useAuth();
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
 
   const [farms, setFarms] = useState<Farm[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFarm, setEditingFarm] = useState<Farm | null>(null);
+  const [deletingFarmId, setDeletingFarmId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -90,6 +91,32 @@ export function FarmsPage() {
     });
   }
 
+  async function handleDeleteFarm(farm: Farm) {
+    if (!token) {
+      return;
+    }
+
+    const shouldDelete = window.confirm(
+      `Deseja apagar a fazenda ${farm.name}? Isso também removerá seus talhões, planejamentos, análises e previsões salvas.`
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    setDeletingFarmId(farm.id);
+
+    try {
+      await farmService.remove(token, farm.id);
+      setFarms((current) => current.filter((item) => item.id !== farm.id));
+      showSuccess('Fazenda apagada com sucesso.');
+    } catch (error) {
+      showError(resolveErrorMessage(error, 'Não foi possível apagar a fazenda.'));
+    } finally {
+      setDeletingFarmId(null);
+    }
+  }
+
   return (
     <main className={styles.page}>
       <section className={styles.container}>
@@ -131,6 +158,14 @@ export function FarmsPage() {
                       </Link>
                       <button type="button" onClick={() => openEditModal(farm)} className={styles.outlineButton}>
                         Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteFarm(farm)}
+                        className={styles.dangerButton}
+                        disabled={deletingFarmId === farm.id}
+                      >
+                        {deletingFarmId === farm.id ? 'Apagando...' : 'Apagar'}
                       </button>
                     </div>
                   </div>

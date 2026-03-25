@@ -54,6 +54,11 @@ export const farmService = {
     await apiClient.delete<void>(`/farms/${farmId}`, { token });
     invalidateCache(farmItemKey(token, farmId));
     invalidateCache(farmListKey(token));
+    invalidateCache(`fields:list:${token}:${farmId}`);
+    invalidateCache(`fields:item:${token}:${farmId}:`);
+    invalidateCache(`fields:forecast:${token}:${farmId}:`);
+    invalidateCache(`plans:list:${token}:${farmId}:`);
+    invalidateCache(`plans:risk:${token}:${farmId}:`);
     invalidateCache(dashboardOverviewKey(token));
   },
 };

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa6';
 import { farmService } from '../services/farmService';
 import { fieldService } from '../services/fieldService';
@@ -15,8 +15,9 @@ import styles from './FarmDetailsPage.module.css';
 
 export function FarmDetailsPage() {
   const { farmId } = useParams();
+  const navigate = useNavigate();
   const { token } = useAuth();
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
 
   const [farm, setFarm] = useState<Farm | null>(null);
   const [fields, setFields] = useState<Field[]>([]);
@@ -24,6 +25,8 @@ export function FarmDetailsPage() {
   const [isFarmModalOpen, setIsFarmModalOpen] = useState(false);
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
   const [editingField, setEditingField] = useState<Field | null>(null);
+  const [deletingFarm, setDeletingFarm] = useState(false);
+  const [deletingFieldId, setDeletingFieldId] = useState<string | null>(null);
 
   const farmIdValue = useMemo(() => farmId ?? '', [farmId]);
 
@@ -131,6 +134,57 @@ export function FarmDetailsPage() {
     });
   }
 
+  async function handleDeleteFarm() {
+    if (!token || !farm) {
+      return;
+    }
+
+    const shouldDelete = window.confirm(
+      `Deseja apagar a fazenda ${farm.name}? Isso também removerá seus talhões, planejamentos, análises e previsões salvas.`
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    setDeletingFarm(true);
+
+    try {
+      await farmService.remove(token, farm.id);
+      showSuccess('Fazenda apagada com sucesso.');
+      navigate('/fazendas', { replace: true });
+    } catch (error) {
+      showError(resolveErrorMessage(error, 'Não foi possível apagar a fazenda.'));
+      setDeletingFarm(false);
+    }
+  }
+
+  async function handleDeleteField(field: Field) {
+    if (!token) {
+      return;
+    }
+
+    const shouldDelete = window.confirm(
+      `Deseja apagar o talhão ${field.name}? Isso também removerá planejamentos, análises e previsões associadas.`
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    setDeletingFieldId(field.id);
+
+    try {
+      await fieldService.remove(token, farmIdValue, field.id);
+      setFields((current) => current.filter((item) => item.id !== field.id));
+      showSuccess('Talhão apagado com sucesso.');
+    } catch (error) {
+      showError(resolveErrorMessage(error, 'Não foi possível apagar o talhão.'));
+    } finally {
+      setDeletingFieldId(null);
+    }
+  }
+
   return (
     <main className={styles.page}>
       <section className={styles.container}>
@@ -146,6 +200,14 @@ export function FarmDetailsPage() {
             </button>
             <button type="button" onClick={openFarmModal} className={styles.outlineButton} disabled={!farm}>
               Editar fazenda
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteFarm}
+              className={styles.dangerButton}
+              disabled={!farm || deletingFarm}
+            >
+              {deletingFarm ? 'Apagando fazenda...' : 'Apagar fazenda'}
             </button>
             <Link to="/fazendas" className={styles.outlineButton}>
               <FaArrowLeft />
@@ -188,6 +250,14 @@ export function FarmDetailsPage() {
                     >
                       Planejar
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteField(field)}
+                      className={styles.dangerButton}
+                      disabled={deletingFieldId === field.id}
+                    >
+                      {deletingFieldId === field.id ? 'Apagando...' : 'Apagar'}
+                    </button>
                   </div>
                 </div>
               ))}

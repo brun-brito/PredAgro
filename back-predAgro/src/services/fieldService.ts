@@ -4,7 +4,6 @@ import { AppError } from '../utils/AppError';
 import { optionalBoolean, optionalEnum, requireString } from '../utils/validators';
 import * as farmRepository from '../repositories/farmRepository';
 import * as fieldRepository from '../repositories/fieldRepository';
-import * as weatherRepository from '../repositories/weatherRepository';
 import type { DrainageLevel, Field, FieldGeometry, SoilTexture } from '../types/domain';
 
 interface FieldPayload {
@@ -150,6 +149,5 @@ export async function update(
 export async function remove(userId: string, farmId: string, fieldId: string): Promise<void> {
   const field = await getById(userId, farmId, fieldId);
 
-  await weatherRepository.removeSnapshots(userId, field.farmId, field.id);
   await fieldRepository.remove(userId, field.farmId, field.id);
 }

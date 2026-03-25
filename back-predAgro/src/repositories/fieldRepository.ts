@@ -1,4 +1,5 @@
 import { firebaseFirestore } from '../config/firebaseAdmin';
+import { deleteDocumentTree } from './firestoreDelete';
 import type { Field, FieldGeometry } from '../types/domain';
 
 type FirestoreFieldDoc = Omit<Field, 'geometry'> & {
@@ -116,5 +117,5 @@ export async function update(userId: string, farmId: string, fieldId: string, fi
 }
 
 export async function remove(userId: string, farmId: string, fieldId: string): Promise<void> {
-  await fieldsCollection(userId, farmId).doc(fieldId).delete();
+  await deleteDocumentTree(fieldsCollection(userId, farmId).doc(fieldId));
 }
