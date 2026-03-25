@@ -19,6 +19,19 @@ cp .env.example .env
 npm run dev
 ```
 
+## Variáveis de ambiente
+
+- `VITE_API_BASE_URL`
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+
+## Google login
+
+O app não restringe domínio de conta Google: qualquer conta Google pode tentar entrar.
+
+Para funcionar em produção, o Firebase Auth ainda exige que o domínio do frontend esteja listado em `Authentication > Settings > Authorized domains`.
+
 ## Rotas principais
 
 - `/`: tela institucional.

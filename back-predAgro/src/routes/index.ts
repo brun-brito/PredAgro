@@ -10,6 +10,7 @@ import { healthRoutes } from './healthRoutes';
 import { cropRoutes } from './cropRoutes';
 import { planRoutes } from './planRoutes';
 import { authMiddleware } from '../middlewares/authMiddleware';
+import { accountRoutes } from './accountRoutes';
 
 const apiRoutes = Router();
 
@@ -17,6 +18,7 @@ apiRoutes.use('/health', healthRoutes);
 apiRoutes.use('/auth', authRoutes);
 
 apiRoutes.use(authMiddleware);
+apiRoutes.use('/account', accountRoutes);
 apiRoutes.use('/farms', farmRoutes);
 apiRoutes.use('/agromet', agrometRoutes);
 apiRoutes.use('/predictions', predictionRoutes);

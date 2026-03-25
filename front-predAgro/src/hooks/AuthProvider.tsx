@@ -55,10 +55,22 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setUser(response.user);
   }, []);
 
+  const signInWithGoogle = useCallback(async () => {
+    const response = await authService.authenticateWithGoogle();
+
+    setToken(response.token);
+    setUser(response.user);
+  }, []);
+
   const signOut = useCallback(() => {
     setToken(null);
     setUser(null);
     clearCache();
+    void authService.clearProviderSession();
+  }, []);
+
+  const updateAuthenticatedUser = useCallback((nextUser: User) => {
+    setUser(nextUser);
   }, []);
 
   const contextValue = useMemo<AuthContextData>(
@@ -69,9 +81,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       isAuthenticated: Boolean(token && user),
       signIn,
       signUp,
+      signInWithGoogle,
       signOut,
+      updateAuthenticatedUser,
     }),
-    [token, user, signIn, signUp, signOut]
+    [token, user, signIn, signUp, signInWithGoogle, signOut, updateAuthenticatedUser]
   );
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;

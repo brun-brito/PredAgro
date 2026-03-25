@@ -10,3 +10,13 @@ export async function login(req: Request, res: Response) {
   const response = await authService.login(req.body);
   res.status(200).json(response);
 }
+
+export async function authenticateWithGoogle(req: Request, res: Response) {
+  const response = await authService.authenticateWithGoogle(req.body);
+  res.status(200).json(response);
+}
+
+export async function forgotPassword(req: Request, res: Response) {
+  const response = await authService.forgotPassword(req.body);
+  res.status(200).json(response);
+}

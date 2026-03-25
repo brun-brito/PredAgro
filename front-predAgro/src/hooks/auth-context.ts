@@ -8,7 +8,9 @@ export interface AuthContextData {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (payload: RegisterPayload) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => void;
+  updateAuthenticatedUser: (user: User) => void;
 }
 
 export const AuthContext = createContext<AuthContextData | undefined>(undefined);
