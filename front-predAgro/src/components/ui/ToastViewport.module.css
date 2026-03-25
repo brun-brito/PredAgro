@@ -1,0 +1,63 @@
+.viewport {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1200;
+  display: grid;
+  gap: 12px;
+  width: min(380px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toast {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  border-radius: var(--radius-md);
+  padding: 14px 14px 14px 16px;
+  background: rgba(126, 34, 34, 0.96);
+  color: var(--white);
+  box-shadow: var(--shadow-soft);
+  pointer-events: auto;
+}
+
+.toast p {
+  margin: 0;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.success {
+  background: rgba(18, 96, 63, 0.96);
+}
+
+.info {
+  background: rgba(15, 50, 78, 0.96);
+}
+
+.closeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.14);
+  color: inherit;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 640px) {
+  .viewport {
+    top: 14px;
+    right: 14px;
+    left: 14px;
+    width: auto;
+  }
+}

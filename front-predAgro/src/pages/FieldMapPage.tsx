@@ -7,21 +7,21 @@ import { farmService } from '../services/farmService';
 import { fieldService } from '../services/fieldService';
 import { geocodingService } from '../services/geocodingService';
 import { useAuth } from '../hooks/useAuth';
-import { ApiError } from '../services/httpClient';
+import { useToast } from '../hooks/useToast';
 import { formatNumber } from '../utils/formatters';
+import { resolveErrorMessage } from '../utils/errors';
 import type { Farm, Field, FieldGeometry } from '../types/domain';
 import styles from './FieldMapPage.module.css';
 
 export function FieldMapPage() {
   const { farmId, fieldId } = useParams();
   const { token } = useAuth();
+  const { showError, showSuccess } = useToast();
 
   const [farm, setFarm] = useState<Farm | null>(null);
   const [field, setField] = useState<Field | null>(null);
   const [geometryDraft, setGeometryDraft] = useState<FieldGeometry | null>(null);
   const [areaDraft, setAreaDraft] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [locationFeedback, setLocationFeedback] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
@@ -53,14 +53,12 @@ export function FieldMapPage() {
 
       if (cachedField && cachedFarm) {
         if (isMounted) {
-          setFeedback(null);
           setIsLoading(false);
         }
         return;
       }
 
       setIsLoading(true);
-      setFeedback(null);
       if (!cachedFarm) {
         setFarm(null);
       }
@@ -83,7 +81,7 @@ export function FieldMapPage() {
         }
       } catch (error) {
         if (isMounted) {
-          setFeedback(error instanceof ApiError ? error.message : 'Não foi possível carregar o talhão.');
+          showError(resolveErrorMessage(error, 'Não foi possível carregar o talhão.'));
         }
       } finally {
         if (isMounted) {
@@ -97,14 +95,13 @@ export function FieldMapPage() {
     return () => {
       isMounted = false;
     };
-  }, [token, farmIdValue, fieldIdValue]);
+  }, [token, farmIdValue, fieldIdValue, showError]);
 
   useEffect(() => {
     let isActive = true;
 
     if (field?.geometry) {
       setMapCenter(null);
-      setLocationFeedback(null);
       return () => {
         isActive = false;
       };
@@ -117,8 +114,6 @@ export function FieldMapPage() {
       };
     }
 
-    setLocationFeedback(null);
-
     geocodingService
       .lookupCityState(farm.city, farm.state)
       .then((center) => {
@@ -129,14 +124,14 @@ export function FieldMapPage() {
       .catch((error) => {
         if (isActive) {
           setMapCenter(null);
-          setLocationFeedback(error instanceof Error ? error.message : 'Não foi possível localizar a cidade.');
+          showError(error instanceof Error ? error.message : 'Não foi possível localizar a cidade.');
         }
       });
 
     return () => {
       isActive = false;
     };
-  }, [farm?.city, farm?.state, field?.geometry]);
+  }, [farm?.city, farm?.state, field?.geometry, showError]);
 
   async function handleSave() {
     if (!token || !farmIdValue || !fieldIdValue) {
@@ -144,20 +139,20 @@ export function FieldMapPage() {
     }
 
     if (!geometryDraft) {
-      setFeedback('Desenhe o polígono do talhão antes de salvar.');
+      showError('Desenhe o polígono do talhão antes de salvar.');
       return;
     }
 
     setIsSaving(true);
-    setFeedback(null);
 
     try {
       const response = await fieldService.update(token, farmIdValue, fieldIdValue, { geometry: geometryDraft });
       setField(response.field);
       setGeometryDraft(response.field.geometry);
       setAreaDraft(response.field.areaHa);
+      showSuccess('Delimitação salva com sucesso.');
     } catch (error) {
-      setFeedback(error instanceof ApiError ? error.message : 'Não foi possível salvar a delimitação.');
+      showError(resolveErrorMessage(error, 'Não foi possível salvar a delimitação.'));
     } finally {
       setIsSaving(false);
     }
@@ -188,9 +183,6 @@ export function FieldMapPage() {
             </Link>
           </div>
         </header>
-
-        {feedback && <p className={styles.feedback}>{feedback}</p>}
-        {locationFeedback && !feedback && <p className={styles.helperText}>{locationFeedback}</p>}
 
         {isLoading ? (
           <div className={styles.loadingBlock}>

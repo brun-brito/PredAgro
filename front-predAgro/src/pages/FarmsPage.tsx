@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa6';
-import { ApiError } from '../services/httpClient';
 import { LoadingState } from '../components/ui/LoadingState';
 import { farmService } from '../services/farmService';
 import { FarmFormModal } from '../components/forms/FarmFormModal';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
 import type { Farm } from '../types/domain';
+import { resolveErrorMessage } from '../utils/errors';
 import styles from './FarmsPage.module.css';
 
 export function FarmsPage() {
   const { token } = useAuth();
+  const { showError } = useToast();
 
   const [farms, setFarms] = useState<Farm[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFarm, setEditingFarm] = useState<Farm | null>(null);
 
@@ -32,7 +33,6 @@ export function FarmsPage() {
       const cached = farmService.getCachedList(token);
       if (cached && isMounted) {
         setFarms(cached.farms);
-        setFeedback(null);
         setIsLoading(false);
       }
 
@@ -47,11 +47,10 @@ export function FarmsPage() {
         const response = await farmService.list(token);
         if (isMounted) {
           setFarms(response.farms);
-          setFeedback(null);
         }
       } catch (error) {
         if (isMounted) {
-          setFeedback(error instanceof ApiError ? error.message : 'Não foi possível carregar as fazendas cadastradas.');
+          showError(resolveErrorMessage(error, 'Não foi possível carregar as fazendas cadastradas.'));
         }
       } finally {
         if (isMounted) {
@@ -65,7 +64,7 @@ export function FarmsPage() {
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, [token, showError]);
 
   function openCreateModal() {
     setEditingFarm(null);
@@ -110,9 +109,6 @@ export function FarmsPage() {
             </Link>
           </div>
         </header>
-
-        {feedback && <p className={styles.feedback}>{feedback}</p>}
-
         <section className={styles.card}>
           <h2>Fazendas cadastradas</h2>
           {isLoading ? (

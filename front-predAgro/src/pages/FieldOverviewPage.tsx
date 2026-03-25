@@ -7,8 +7,9 @@ import { FieldFormModal } from '../components/forms/FieldFormModal';
 import { farmService } from '../services/farmService';
 import { fieldService } from '../services/fieldService';
 import { useAuth } from '../hooks/useAuth';
-import { ApiError } from '../services/httpClient';
+import { useToast } from '../hooks/useToast';
 import { formatNumber } from '../utils/formatters';
+import { resolveErrorMessage } from '../utils/errors';
 import type { Farm, Field } from '../types/domain';
 import styles from './FieldOverviewPage.module.css';
 
@@ -27,10 +28,10 @@ const drainageLabel: Record<string, string> = {
 export function FieldOverviewPage() {
   const { farmId, fieldId } = useParams();
   const { token } = useAuth();
+  const { showError } = useToast();
 
   const [farm, setFarm] = useState<Farm | null>(null);
   const [field, setField] = useState<Field | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -61,14 +62,12 @@ export function FieldOverviewPage() {
 
       if (cachedFarm && cachedField) {
         if (isMounted) {
-          setFeedback(null);
           setIsLoading(false);
         }
         return;
       }
 
       setIsLoading(true);
-      setFeedback(null);
       if (!cachedFarm) {
         setFarm(null);
       }
@@ -88,7 +87,7 @@ export function FieldOverviewPage() {
         }
       } catch (error) {
         if (isMounted) {
-          setFeedback(error instanceof ApiError ? error.message : 'Não foi possível carregar o talhão.');
+          showError(resolveErrorMessage(error, 'Não foi possível carregar o talhão.'));
         }
       } finally {
         if (isMounted) {
@@ -102,7 +101,7 @@ export function FieldOverviewPage() {
     return () => {
       isMounted = false;
     };
-  }, [token, farmIdValue, fieldIdValue]);
+  }, [token, farmIdValue, fieldIdValue, showError]);
 
   const hasGeometry = Boolean(field?.geometry);
 
@@ -122,9 +121,6 @@ export function FieldOverviewPage() {
             </Link>
           </div>
         </header>
-
-        {feedback && <p className={styles.feedback}>{feedback}</p>}
-
         {isLoading ? (
           <div className={styles.loadingBlock}>
             <LoadingState label="Carregando talhão..." />

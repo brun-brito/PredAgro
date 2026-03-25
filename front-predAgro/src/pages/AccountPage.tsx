@@ -3,32 +3,16 @@ import { FaArrowLeft } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import { LoadingState } from '../components/ui/LoadingState';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
 import { accountService } from '../services/accountService';
-import { ApiError } from '../services/httpClient';
 import type { AccountProfile } from '../types/domain';
+import { resolveErrorMessage } from '../utils/errors';
 import styles from './AccountPage.module.css';
 
 interface FormValues {
   name: string;
   email: string;
   telefone: string;
-}
-
-interface FeedbackState {
-  message: string;
-  tone: 'error' | 'success';
-}
-
-function resolveErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return fallback;
 }
 
 function resolveProviderLabel(profile: AccountProfile | null) {
@@ -49,6 +33,7 @@ function resolveProviderLabel(profile: AccountProfile | null) {
 
 export function AccountPage() {
   const { token, user, updateAuthenticatedUser } = useAuth();
+  const { showError, showSuccess } = useToast();
   const [formValues, setFormValues] = useState<FormValues>({
     name: user?.name ?? '',
     email: user?.email ?? '',
@@ -57,7 +42,6 @@ export function AccountPage() {
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState<FeedbackState | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -86,13 +70,9 @@ export function AccountPage() {
           telefone: response.user.telefone ?? '',
         });
         updateAuthenticatedUser(response.user);
-        setFeedback(null);
       } catch (error) {
         if (isMounted) {
-          setFeedback({
-            message: resolveErrorMessage(error, 'Não foi possível carregar os dados da conta.'),
-            tone: 'error',
-          });
+          showError(resolveErrorMessage(error, 'Não foi possível carregar os dados da conta.'));
         }
       } finally {
         if (isMounted) {
@@ -106,7 +86,7 @@ export function AccountPage() {
     return () => {
       isMounted = false;
     };
-  }, [token, updateAuthenticatedUser]);
+  }, [token, updateAuthenticatedUser, showError]);
 
   function updateField(field: keyof FormValues, value: string) {
     setFormValues((current) => ({
@@ -122,7 +102,6 @@ export function AccountPage() {
       return;
     }
 
-    setFeedback(null);
     setIsSubmitting(true);
 
     try {
@@ -135,15 +114,9 @@ export function AccountPage() {
         telefone: response.user.telefone ?? '',
       });
       updateAuthenticatedUser(response.user);
-      setFeedback({
-        message: 'Dados atualizados com sucesso.',
-        tone: 'success',
-      });
+      showSuccess('Dados atualizados com sucesso.');
     } catch (error) {
-      setFeedback({
-        message: resolveErrorMessage(error, 'Não foi possível atualizar os dados da conta.'),
-        tone: 'error',
-      });
+      showError(resolveErrorMessage(error, 'Não foi possível atualizar os dados da conta.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -168,13 +141,6 @@ export function AccountPage() {
             </Link>
           </div>
         </header>
-
-        {feedback && (
-          <p className={`${styles.feedback} ${feedback.tone === 'success' ? styles.successFeedback : ''}`}>
-            {feedback.message}
-          </p>
-        )}
-
         {isLoading ? (
           <section className={styles.loadingBlock}>
             <LoadingState label="Carregando dados da conta..." />

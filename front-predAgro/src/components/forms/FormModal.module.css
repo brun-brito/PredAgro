@@ -65,25 +65,10 @@
   cursor: not-allowed;
 }
 
-.feedback {
-  padding: 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(191, 65, 47, 0.35);
-  background-color: rgba(191, 65, 47, 0.08);
-  color: var(--danger);
-}
-
 .helperText {
   margin: 0;
   font-size: 0.9rem;
   color: var(--slate-600);
-}
-
-.helperError {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--danger);
-  font-weight: 600;
 }
 
 @media (max-width: 600px) {

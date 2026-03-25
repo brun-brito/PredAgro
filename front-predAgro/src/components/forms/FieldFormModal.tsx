@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Modal } from '../ui/Modal';
 import { fieldService, type FieldPayload } from '../../services/fieldService';
-import { ApiError } from '../../services/httpClient';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 import type { DrainageLevel, Field, SoilTexture } from '../../types/domain';
+import { resolveErrorMessage } from '../../utils/errors';
 import styles from './FormModal.module.css';
 
 interface FieldFormValues {
@@ -30,8 +31,8 @@ interface FieldFormModalProps {
 
 export function FieldFormModal({ isOpen, farmId, field, onClose, onSaved }: FieldFormModalProps) {
   const { token } = useAuth();
+  const { showError, showSuccess } = useToast();
   const [formValues, setFormValues] = useState<FieldFormValues>(initialValues);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isEditing = Boolean(field);
@@ -49,7 +50,6 @@ export function FieldFormModal({ isOpen, farmId, field, onClose, onSaved }: Fiel
       irrigation:
         field?.irrigation === undefined ? '' : field.irrigation ? 'sim' : 'nao',
     });
-    setFeedback(null);
   }, [isOpen, field]);
 
   function updateField(fieldKey: keyof FieldFormValues, value: string) {
@@ -89,7 +89,6 @@ export function FieldFormModal({ isOpen, farmId, field, onClose, onSaved }: Fiel
     }
 
     setIsSubmitting(true);
-    setFeedback(null);
 
     try {
       const payload = buildPayload();
@@ -101,13 +100,10 @@ export function FieldFormModal({ isOpen, farmId, field, onClose, onSaved }: Fiel
         const response = await fieldService.create(token, farmId, payload);
         onSaved?.(response.field, 'create');
       }
+      showSuccess(isEditing ? 'Talhão atualizado com sucesso.' : 'Talhão cadastrado com sucesso.');
       onClose();
     } catch (error) {
-      if (error instanceof ApiError) {
-        setFeedback(error.message);
-      } else {
-        setFeedback('Não foi possível salvar o talhão.');
-      }
+      showError(resolveErrorMessage(error, 'Não foi possível salvar o talhão.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -166,9 +162,6 @@ export function FieldFormModal({ isOpen, farmId, field, onClose, onSaved }: Fiel
             </select>
           </label>
         </div>
-
-        {feedback && <p className={styles.feedback}>{feedback}</p>}
-
         <div className={styles.actions}>
           <button type="button" onClick={onClose} className={styles.outlineButton}>
             Cancelar

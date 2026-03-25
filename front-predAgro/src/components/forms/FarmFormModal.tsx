@@ -2,9 +2,10 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Modal } from '../ui/Modal';
 import { farmService } from '../../services/farmService';
 import { cepService } from '../../services/cepService';
-import { ApiError } from '../../services/httpClient';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 import type { Farm } from '../../types/domain';
+import { resolveErrorMessage } from '../../utils/errors';
 import styles from './FormModal.module.css';
 
 interface FarmFormValues {
@@ -30,9 +31,8 @@ interface FarmFormModalProps {
 
 export function FarmFormModal({ isOpen, farm, onClose, onSaved }: FarmFormModalProps) {
   const { token } = useAuth();
+  const { showError, showSuccess } = useToast();
   const [formValues, setFormValues] = useState<FarmFormValues>(initialValues);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [cepFeedback, setCepFeedback] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCepLoading, setIsCepLoading] = useState(false);
   const [lastCepLookup, setLastCepLookup] = useState('');
@@ -51,8 +51,6 @@ export function FarmFormModal({ isOpen, farm, onClose, onSaved }: FarmFormModalP
       city: farm?.city ?? '',
       state: farm?.state ?? '',
     });
-    setFeedback(null);
-    setCepFeedback(null);
     setLastCepLookup('');
     setIsCepLoading(false);
   }, [isOpen, farm]);
@@ -70,7 +68,6 @@ export function FarmFormModal({ isOpen, farm, onClose, onSaved }: FarmFormModalP
       ...current,
       cep: normalized,
     }));
-    setCepFeedback(null);
   }
 
   useEffect(() => {
@@ -87,7 +84,6 @@ export function FarmFormModal({ isOpen, farm, onClose, onSaved }: FarmFormModalP
     let isActive = true;
     const timer = setTimeout(async () => {
       setIsCepLoading(true);
-      setCepFeedback(null);
 
       try {
         const result = await cepService.lookup(cep);
@@ -104,7 +100,7 @@ export function FarmFormModal({ isOpen, farm, onClose, onSaved }: FarmFormModalP
         if (!isActive) {
           return;
         }
-        setCepFeedback(error instanceof Error ? error.message : 'Não foi possível localizar o CEP.');
+        showError(error instanceof Error ? error.message : 'Não foi possível localizar o CEP.');
       } finally {
         if (isActive) {
           setIsCepLoading(false);
@@ -116,7 +112,7 @@ export function FarmFormModal({ isOpen, farm, onClose, onSaved }: FarmFormModalP
       isActive = false;
       clearTimeout(timer);
     };
-  }, [formValues.cep, isOpen, lastCepLookup]);
+  }, [formValues.cep, isOpen, lastCepLookup, showError]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -126,7 +122,6 @@ export function FarmFormModal({ isOpen, farm, onClose, onSaved }: FarmFormModalP
     }
 
     setIsSubmitting(true);
-    setFeedback(null);
 
     try {
       if (isEditing && farm) {
@@ -144,13 +139,10 @@ export function FarmFormModal({ isOpen, farm, onClose, onSaved }: FarmFormModalP
         });
         onSaved?.(response.farm, 'create');
       }
+      showSuccess(isEditing ? 'Fazenda atualizada com sucesso.' : 'Fazenda cadastrada com sucesso.');
       onClose();
     } catch (error) {
-      if (error instanceof ApiError) {
-        setFeedback(error.message);
-      } else {
-        setFeedback('Não foi possível salvar a fazenda.');
-      }
+      showError(resolveErrorMessage(error, 'Não foi possível salvar a fazenda.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -187,7 +179,6 @@ export function FarmFormModal({ isOpen, farm, onClose, onSaved }: FarmFormModalP
           />
         </label>
         {isCepLoading && <p className={styles.helperText}>Buscando CEP...</p>}
-        {cepFeedback && <p className={styles.helperError}>{cepFeedback}</p>}
         <div className={styles.row}>
           <label>
             Cidade
@@ -207,9 +198,6 @@ export function FarmFormModal({ isOpen, farm, onClose, onSaved }: FarmFormModalP
             />
           </label>
         </div>
-
-        {feedback && <p className={styles.feedback}>{feedback}</p>}
-
         <div className={styles.actions}>
           <button type="button" onClick={onClose} className={styles.outlineButton}>
             Cancelar

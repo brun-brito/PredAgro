@@ -7,14 +7,16 @@ import { cropService } from '../services/cropService';
 import { fieldService } from '../services/fieldService';
 import { planService, type PlanPayload } from '../services/planService';
 import { useAuth } from '../hooks/useAuth';
-import { ApiError } from '../services/httpClient';
+import { useToast } from '../hooks/useToast';
 import type { CropProfile, Field, PlanRiskAssessment, PlantingPlan } from '../types/domain';
+import { resolveErrorMessage } from '../utils/errors';
 import styles from './FieldPlanPage.module.css';
 
 export function FieldPlanPage() {
   const { farmId, fieldId } = useParams();
   const { token } = useAuth();
   const isMountedRef = useRef(true);
+  const { showError, showSuccess } = useToast();
 
   const [field, setField] = useState<Field | null>(null);
   const [crops, setCrops] = useState<CropProfile[]>([]);
@@ -27,7 +29,6 @@ export function FieldPlanPage() {
     startDate: '',
     endDate: '',
   });
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [planFeedback, setPlanFeedback] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPlanLoading, setIsPlanLoading] = useState(true);
@@ -110,7 +111,6 @@ export function FieldPlanPage() {
 
       if (cachedField && cachedCrops && cachedPlans) {
         if (isMounted) {
-          setFeedback(null);
           setPlanFeedback(null);
           setIsLoading(false);
           setIsPlanLoading(false);
@@ -127,7 +127,6 @@ export function FieldPlanPage() {
 
       setIsLoading(true);
       setIsPlanLoading(true);
-      setFeedback(null);
       setAssessment(null);
       setSelectedPlanId(null);
       if (!cachedField) {
@@ -198,7 +197,7 @@ export function FieldPlanPage() {
         }
       } catch (error) {
         if (isMounted) {
-          setFeedback(error instanceof ApiError ? error.message : 'Não foi possível carregar o planejamento.');
+          showError(resolveErrorMessage(error, 'Não foi possível carregar o planejamento.'));
         }
       } finally {
         if (isMounted) {
@@ -213,7 +212,7 @@ export function FieldPlanPage() {
     return () => {
       isMounted = false;
     };
-  }, [token, farmIdValue, fieldIdValue]);
+  }, [token, farmIdValue, fieldIdValue, showError]);
 
   async function loadRisk(
     planId: string,
@@ -247,7 +246,7 @@ export function FieldPlanPage() {
       }
     } catch (error) {
       if (isMountedRef.current) {
-        setPlanFeedback(error instanceof ApiError ? error.message : 'Não foi possível gerar a análise do plano.');
+        showError(resolveErrorMessage(error, 'Não foi possível gerar a análise do plano.'));
       }
     } finally {
       if (isMountedRef.current) {
@@ -324,8 +323,9 @@ export function FieldPlanPage() {
         endDate: '',
       }));
       await loadRisk(response.plan.id, token, farmIdValue, fieldIdValue, true);
+      showSuccess('Análise criada com sucesso.');
     } catch (error) {
-      setPlanFeedback(error instanceof ApiError ? error.message : 'Não foi possível salvar o plano.');
+      showError(resolveErrorMessage(error, 'Não foi possível salvar o plano.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -373,8 +373,9 @@ export function FieldPlanPage() {
           await loadRisk(nextPlan.id, token, farmIdValue, fieldIdValue, Boolean(field?.geometry));
         }
       }
+      showSuccess('Análise apagada com sucesso.');
     } catch (error) {
-      setPlanFeedback(error instanceof ApiError ? error.message : 'Não foi possível apagar a análise.');
+      showError(resolveErrorMessage(error, 'Não foi possível apagar a análise.'));
     } finally {
       setDeletingPlanId(null);
     }
@@ -396,9 +397,6 @@ export function FieldPlanPage() {
             </Link>
           </div>
         </header>
-
-        {feedback && <p className={styles.feedback}>{feedback}</p>}
-
         {isLoading ? (
           <div className={styles.loadingBlock}>
             <LoadingState label="Carregando planejamento..." />

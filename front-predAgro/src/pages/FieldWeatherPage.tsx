@@ -5,13 +5,15 @@ import { WeatherPanel } from '../components/field/WeatherPanel';
 import { LoadingState } from '../components/ui/LoadingState';
 import { fieldService } from '../services/fieldService';
 import { useAuth } from '../hooks/useAuth';
-import { ApiError } from '../services/httpClient';
+import { useToast } from '../hooks/useToast';
 import type { Field, WeatherSnapshot } from '../types/domain';
+import { resolveErrorMessage } from '../utils/errors';
 import styles from './FieldWeatherPage.module.css';
 
 export function FieldWeatherPage() {
   const { farmId, fieldId } = useParams();
   const { token } = useAuth();
+  const { showError } = useToast();
 
   const [field, setField] = useState<Field | null>(null);
   const [snapshot, setSnapshot] = useState<WeatherSnapshot | null>(null);
@@ -78,7 +80,8 @@ export function FieldWeatherPage() {
           }
         } catch (error) {
           if (isMounted) {
-            setFeedback(error instanceof ApiError ? error.message : 'Não foi possível carregar o talhão.');
+            setFeedback(null);
+            showError(resolveErrorMessage(error, 'Não foi possível carregar o talhão.'));
             setIsLoading(false);
           }
           return;
@@ -93,7 +96,7 @@ export function FieldWeatherPage() {
       } catch (error) {
         if (isMounted) {
           setSnapshot(null);
-          setFeedback(error instanceof ApiError ? error.message : 'Não foi possível carregar a previsão.');
+          showError(resolveErrorMessage(error, 'Não foi possível carregar a previsão.'));
         }
       } finally {
         if (isMounted) {
@@ -107,7 +110,7 @@ export function FieldWeatherPage() {
     return () => {
       isMounted = false;
     };
-  }, [token, farmIdValue, fieldIdValue]);
+  }, [token, farmIdValue, fieldIdValue, showError]);
 
   async function handleRefresh() {
     if (!token || !farmIdValue || !fieldIdValue) {
@@ -121,7 +124,7 @@ export function FieldWeatherPage() {
       const response = await fieldService.refreshForecast(token, farmIdValue, fieldIdValue);
       setSnapshot(response.snapshot);
     } catch (error) {
-      setFeedback(error instanceof ApiError ? error.message : 'Não foi possível atualizar a previsão.');
+      showError(resolveErrorMessage(error, 'Não foi possível atualizar a previsão.'));
     } finally {
       setIsRefreshing(false);
     }

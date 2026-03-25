@@ -7,18 +7,19 @@ import { LoadingState } from '../components/ui/LoadingState';
 import { FarmFormModal } from '../components/forms/FarmFormModal';
 import { FieldFormModal } from '../components/forms/FieldFormModal';
 import { useAuth } from '../hooks/useAuth';
-import { ApiError } from '../services/httpClient';
+import { useToast } from '../hooks/useToast';
 import { formatNumber } from '../utils/formatters';
+import { resolveErrorMessage } from '../utils/errors';
 import type { Field, Farm } from '../types/domain';
 import styles from './FarmDetailsPage.module.css';
 
 export function FarmDetailsPage() {
   const { farmId } = useParams();
   const { token } = useAuth();
+  const { showError } = useToast();
 
   const [farm, setFarm] = useState<Farm | null>(null);
   const [fields, setFields] = useState<Field[]>([]);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFarmModalOpen, setIsFarmModalOpen] = useState(false);
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
@@ -50,7 +51,6 @@ export function FarmDetailsPage() {
 
       if (cachedFarm && cachedFields) {
         if (isMounted) {
-          setFeedback(null);
           setIsLoading(false);
         }
         return;
@@ -73,11 +73,10 @@ export function FarmDetailsPage() {
         if (isMounted) {
           setFarm(farmResponse.farm);
           setFields(fieldsResponse.fields);
-          setFeedback(null);
         }
       } catch (error) {
         if (isMounted) {
-          setFeedback(error instanceof ApiError ? error.message : 'Não foi possível carregar os dados da fazenda.');
+          showError(resolveErrorMessage(error, 'Não foi possível carregar os dados da fazenda.'));
         }
       } finally {
         if (isMounted) {
@@ -91,7 +90,7 @@ export function FarmDetailsPage() {
     return () => {
       isMounted = false;
     };
-  }, [token, farmIdValue]);
+  }, [token, farmIdValue, showError]);
 
   function openFarmModal() {
     if (!farm) {
@@ -154,9 +153,6 @@ export function FarmDetailsPage() {
             </Link>
           </div>
         </header>
-
-        {feedback && <p className={styles.feedback}>{feedback}</p>}
-
         <section className={styles.card}>
           <h2>Talhões cadastrados</h2>
           {isLoading ? (

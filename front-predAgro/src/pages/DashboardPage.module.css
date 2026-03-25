@@ -58,15 +58,6 @@
   cursor: pointer;
 }
 
-.warningBanner {
-  border: 1px solid rgba(197, 127, 27, 0.35);
-  background-color: rgba(197, 127, 27, 0.11);
-  color: #7f510e;
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
-  font-weight: 600;
-}
-
 .loadingBlock {
   border-radius: var(--radius-md);
   border: 1px dashed rgba(63, 155, 104, 0.35);

@@ -7,6 +7,7 @@ import { PreparedModules } from '../components/dashboard/PreparedModules';
 import { TotalsOverview } from '../components/dashboard/TotalsOverview';
 import { LoadingState } from '../components/ui/LoadingState';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
 import { dashboardService } from '../services/dashboardService';
 import type { DashboardOverview } from '../types/domain';
 import styles from './DashboardPage.module.css';
@@ -14,6 +15,7 @@ import styles from './DashboardPage.module.css';
 export function DashboardPage() {
   const navigate = useNavigate();
   const { token, user, signOut } = useAuth();
+  const { showError } = useToast();
 
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,6 +58,7 @@ export function DashboardPage() {
         if (isMounted) {
           setHasApiError(true);
           setOverview(null);
+          showError('Não foi possível carregar dados da API neste momento.');
         }
       } finally {
         if (isMounted) {
@@ -69,7 +72,7 @@ export function DashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, [token, refreshKey]);
+  }, [token, refreshKey, showError]);
 
   function handleSignOut() {
     signOut();
@@ -105,10 +108,6 @@ export function DashboardPage() {
             </button>
           </div>
         </header>
-
-        {hasApiError && (
-          <p className={styles.warningBanner}>Não foi possível carregar dados da API neste momento.</p>
-        )}
 
         {isLoading && (
           <div className={styles.loadingBlock}>

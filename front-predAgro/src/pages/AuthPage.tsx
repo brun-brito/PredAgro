@@ -2,8 +2,9 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { FcGoogle } from 'react-icons/fc';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
-import { ApiError } from '../services/httpClient';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
+import { resolveErrorMessage } from '../utils/errors';
 import styles from './AuthPage.module.css';
 
 interface FormValues {
@@ -20,23 +21,16 @@ const initialFormValues: FormValues = {
   password: '',
 };
 
-type FeedbackTone = 'error' | 'success';
-
-interface FeedbackState {
-  message: string;
-  tone: FeedbackTone;
-}
-
 export function AuthPage() {
   const navigate = useNavigate();
   const { signIn, signUp, signInWithGoogle, isAuthenticated } = useAuth();
+  const { showError, showSuccess } = useToast();
 
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [formValues, setFormValues] = useState<FormValues>(initialFormValues);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [feedback, setFeedback] = useState<FeedbackState | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -51,21 +45,8 @@ export function AuthPage() {
     }));
   }
 
-  function resolveErrorMessage(error: unknown, fallback: string) {
-    if (error instanceof ApiError) {
-      return error.message;
-    }
-
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    return fallback;
-  }
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setFeedback(null);
     setIsSubmitting(true);
 
     try {
@@ -77,24 +58,20 @@ export function AuthPage() {
 
       navigate('/painel', { replace: true });
     } catch (error) {
-      setFeedback({ message: resolveErrorMessage(error, 'Não foi possível processar sua solicitação.'), tone: 'error' });
+      showError(resolveErrorMessage(error, 'Não foi possível processar sua solicitação.'));
     } finally {
       setIsSubmitting(false);
     }
   }
 
   async function handleGoogleAuth() {
-    setFeedback(null);
     setIsGoogleSubmitting(true);
 
     try {
       await signInWithGoogle();
       navigate('/painel', { replace: true });
     } catch (error) {
-      setFeedback({
-        message: resolveErrorMessage(error, 'Não foi possível entrar com Google.'),
-        tone: 'error',
-      });
+      showError(resolveErrorMessage(error, 'Não foi possível entrar com Google.'));
     } finally {
       setIsGoogleSubmitting(false);
     }
@@ -102,21 +79,17 @@ export function AuthPage() {
 
   async function handleForgotPassword() {
     if (!formValues.email.trim()) {
-      setFeedback({ message: 'Informe seu e-mail para recuperar a senha.', tone: 'error' });
+      showError('Informe seu e-mail para recuperar a senha.');
       return;
     }
 
-    setFeedback(null);
     setIsResettingPassword(true);
 
     try {
       const response = await authService.forgotPassword(formValues.email);
-      setFeedback({ message: response.message, tone: 'success' });
+      showSuccess(response.message);
     } catch (error) {
-      setFeedback({
-        message: resolveErrorMessage(error, 'Não foi possível enviar o e-mail de recuperação.'),
-        tone: 'error',
-      });
+      showError(resolveErrorMessage(error, 'Não foi possível enviar o e-mail de recuperação.'));
     } finally {
       setIsResettingPassword(false);
     }
@@ -143,7 +116,6 @@ export function AuthPage() {
               className={isLoginMode ? styles.activeMode : ''}
               onClick={() => {
                 setIsLoginMode(true);
-                setFeedback(null);
               }}
             >
               Entrar
@@ -153,7 +125,6 @@ export function AuthPage() {
               className={!isLoginMode ? styles.activeMode : ''}
               onClick={() => {
                 setIsLoginMode(false);
-                setFeedback(null);
               }}
             >
               Cadastrar
@@ -243,13 +214,6 @@ export function AuthPage() {
                 minLength={6}
               />
             </label>
-
-            {feedback && (
-              <p className={`${styles.feedback} ${feedback.tone === 'success' ? styles.successFeedback : ''}`}>
-                {feedback.message}
-              </p>
-            )}
-
             <button
               type="submit"
               className={styles.submitButton}
