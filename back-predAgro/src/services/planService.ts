@@ -66,6 +66,10 @@ export async function create(
 ): Promise<PlantingPlan> {
   const field = await fieldService.getById(userId, farmId, fieldId);
 
+  if (field.areaHa === null) {
+    throw new AppError('Talhão sem delimitação. Defina o polígono antes de criar um planejamento.', 400);
+  }
+
   const cropId = requireString(payload.cropId, 'cropId', 2);
   const crop = getCropById(cropId);
 

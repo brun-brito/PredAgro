@@ -108,7 +108,7 @@ export async function getHistoricalNormals(
     throw new AppError('Histórico climático insuficiente para o período selecionado.', 400);
   }
 
-  const yearlySeries = [];
+  const yearlySeries: WeatherDay[][] = [];
 
   for (const year of years) {
     const histStart = new Date(Date.UTC(year, planStart.getUTCMonth(), planStart.getUTCDate()));

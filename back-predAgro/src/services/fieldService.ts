@@ -119,8 +119,13 @@ export async function update(
   const field = await getById(userId, farmId, fieldId);
 
   const name = payload.name ? requireString(payload.name, 'name', 3) : field.name;
-  const nextGeometry = payload.geometry ? ensureGeometry(payload.geometry) : field.geometry;
-  const metrics = payload.geometry ? computeMetrics(nextGeometry) : null;
+  const hasGeometryUpdate = payload.geometry !== undefined;
+  const nextGeometry = hasGeometryUpdate
+    ? payload.geometry
+      ? ensureGeometry(payload.geometry)
+      : null
+    : field.geometry;
+  const metrics = hasGeometryUpdate && nextGeometry ? computeMetrics(nextGeometry) : null;
   const soilTexture = optionalEnum(payload.soilTexture, SOIL_TEXTURES, 'soilTexture') ?? field.soilTexture;
   const drainage = optionalEnum(payload.drainage, DRAINAGE_LEVELS, 'drainage') ?? field.drainage;
   const irrigation = payload.irrigation !== undefined ? optionalBoolean(payload.irrigation, 'irrigation') : field.irrigation;
@@ -129,9 +134,9 @@ export async function update(
     ...field,
     name,
     geometry: nextGeometry,
-    areaHa: metrics ? metrics.areaHa : field.areaHa,
-    centroidLat: metrics ? metrics.centroidLat : field.centroidLat,
-    centroidLon: metrics ? metrics.centroidLon : field.centroidLon,
+    areaHa: hasGeometryUpdate ? (metrics ? metrics.areaHa : null) : field.areaHa,
+    centroidLat: hasGeometryUpdate ? (metrics ? metrics.centroidLat : null) : field.centroidLat,
+    centroidLon: hasGeometryUpdate ? (metrics ? metrics.centroidLon : null) : field.centroidLon,
     soilTexture,
     drainage,
     irrigation,

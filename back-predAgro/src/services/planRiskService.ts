@@ -488,6 +488,10 @@ export async function getPlanRisk(
   const forecast = await weatherService.getForecast(userId, farmId, fieldId, { days: MAX_FORECAST_DAYS });
   const field = await fieldService.getById(userId, farmId, fieldId);
 
+  if (field.centroidLat === null || field.centroidLon === null) {
+    throw new AppError('Talhão sem delimitação. Defina o polígono antes de consultar o risco.', 400);
+  }
+
   if (
     plan.riskCache &&
     plan.riskCache.assessment.startDate === plan.startDate &&
