@@ -92,6 +92,13 @@ export interface CropProfile {
     irrigationRecommended?: boolean;
   };
   stages: CropStageRule[];
+  yieldModel?: {
+    baselineYield: number;
+    minYield: number;
+    maxYield: number;
+    sensitivity: number;
+    riskWeights: Partial<Record<RiskCategoryId, number>>;
+  };
 }
 
 export interface PlantingPlan {
@@ -139,12 +146,30 @@ export interface PlanRiskAssessment {
   mode: 'forecast' | 'mixed' | 'historical';
   confidence: 'high' | 'medium' | 'low';
   notes: string[];
+  yieldForecast?: YieldForecast;
   generatedAt: string;
 }
 
 export interface PlanRiskCache {
   assessment: PlanRiskAssessment;
   expiresAt: string;
+}
+
+export interface YieldForecast {
+  model: string;
+  unit: 't/ha';
+  baselineYield: number;
+  estimatedYield: number;
+  minYield: number;
+  maxYield: number;
+  totalProduction: number | null;
+  confidence: 'high' | 'medium' | 'low';
+  notes: string[];
+  factors: Array<{
+    id: RiskCategoryId;
+    label: string;
+    impact: number;
+  }>;
 }
 
 export interface WeatherDay {

@@ -75,6 +75,37 @@
   font-weight: 600;
 }
 
+.yieldGrid {
+  display: grid;
+  gap: 6px;
+  color: var(--slate-700);
+  font-weight: 600;
+}
+
+.yieldFactors {
+  display: grid;
+  gap: 6px;
+}
+
+.yieldFactors h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--slate-800);
+}
+
+.yieldFactors ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--slate-700);
+}
+
+.yieldNotes {
+  display: grid;
+  gap: 6px;
+  color: var(--slate-600);
+  font-size: 0.9rem;
+}
+
 .categoryList {
   display: grid;
   gap: 12px;

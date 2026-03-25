@@ -4,6 +4,7 @@ import type {
   CropStageRule,
   Field,
   PlanRiskAssessment,
+  YieldForecast,
   RiskCategoryId,
   RiskCategoryResult,
   RiskLevel,
@@ -51,6 +52,13 @@ function clamp(value: number, min = 0, max = 100) {
 function average(values: number[]) {
   if (values.length === 0) return 0;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function standardDeviation(values: number[]) {
+  if (values.length === 0) return 0;
+  const avg = average(values);
+  const variance = average(values.map((value) => (value - avg) ** 2));
+  return Math.sqrt(variance);
 }
 
 function parseDate(value: string) {
@@ -172,6 +180,88 @@ function buildCategory(
     level: levelFromScore(score),
     reasons,
     recommendations,
+  };
+}
+
+function computeYieldForecast({
+  crop,
+  planArea,
+  categories,
+  overallScore,
+  mode,
+  combinedDays,
+}: {
+  crop: CropProfile;
+  planArea: number | null;
+  categories: RiskCategoryResult[];
+  overallScore: number;
+  mode: 'forecast' | 'mixed' | 'historical';
+  combinedDays: WeatherDay[];
+}): YieldForecast | null {
+  if (!crop.yieldModel) {
+    return null;
+  }
+
+  const { baselineYield, minYield, maxYield, sensitivity, riskWeights } = crop.yieldModel;
+  const weightSum = categories.reduce((sum, category) => sum + (riskWeights[category.id] ?? 0), 0);
+  const weightedImpact = categories.reduce(
+    (sum, category) => sum + (riskWeights[category.id] ?? 0) * (category.score / 100),
+    0
+  );
+
+  const normalizedImpact = weightSum > 0 ? weightedImpact / weightSum : overallScore / 100;
+  const yieldFactor = clamp(1 - normalizedImpact * sensitivity, 0.2, 1.2);
+  const estimatedYieldRaw = baselineYield * yieldFactor;
+  const estimatedYield = clamp(estimatedYieldRaw, minYield, maxYield);
+
+  const tempAvg = average(combinedDays.map((day) => (day.temperatureMax + day.temperatureMin) / 2));
+  const precipAvg = average(combinedDays.map((day) => day.precipitationSum));
+  const variability = standardDeviation(combinedDays.map((day) => day.precipitationSum));
+
+  const baseSpread = mode === 'forecast' ? 0.1 : mode === 'mixed' ? 0.2 : 0.3;
+  const variabilitySpread = clamp(variability / Math.max(precipAvg, 1) * 0.05, 0, 0.1);
+  const spread = baseSpread + variabilitySpread;
+
+  const min = clamp(estimatedYield * (1 - spread), minYield, maxYield);
+  const max = clamp(estimatedYield * (1 + spread), minYield, maxYield);
+
+  const totalProduction = planArea ? Number((estimatedYield * planArea).toFixed(2)) : null;
+
+  const factors = categories
+    .map((category) => {
+      const weight = riskWeights[category.id] ?? 0;
+      const impact = weightSum > 0 ? (weight * (category.score / 100)) / weightSum : 0;
+      return {
+        id: category.id,
+        label: category.label,
+        impact: Number((impact * 100).toFixed(1)),
+      };
+    })
+    .filter((factor) => factor.impact > 0)
+    .sort((a, b) => b.impact - a.impact)
+    .slice(0, 3);
+
+  const notes = [
+    'Estimativa calculada por modelo agroclimático linear calibrável (v1).',
+    `Média térmica do período: ${tempAvg.toFixed(1)}°C; precipitação média diária: ${precipAvg.toFixed(1)} mm.`,
+    mode === 'forecast'
+      ? 'Baseada em previsão meteorológica de curto prazo.'
+      : mode === 'mixed'
+      ? 'Parte do período utiliza climatologia histórica.'
+      : 'Baseada exclusivamente em climatologia histórica.',
+  ];
+
+  return {
+    model: 'agro-linear-v1',
+    unit: 't/ha',
+    baselineYield: Number(baselineYield.toFixed(2)),
+    estimatedYield: Number(estimatedYield.toFixed(2)),
+    minYield: Number(min.toFixed(2)),
+    maxYield: Number(max.toFixed(2)),
+    totalProduction,
+    confidence: mode === 'forecast' ? 'high' : mode === 'mixed' ? 'medium' : 'low',
+    notes,
+    factors,
   };
 }
 
@@ -486,6 +576,15 @@ export async function getPlanRisk(
     );
   }
 
+  const yieldForecast = computeYieldForecast({
+    crop,
+    planArea: plan.areaHa ?? null,
+    categories,
+    overallScore,
+    mode,
+    combinedDays,
+  });
+
   const assessment: PlanRiskAssessment = {
     planId: plan.id,
     fieldId: plan.fieldId,
@@ -499,6 +598,7 @@ export async function getPlanRisk(
     mode,
     confidence,
     notes,
+    yieldForecast: yieldForecast ?? undefined,
     generatedAt: new Date().toISOString(),
   };
 

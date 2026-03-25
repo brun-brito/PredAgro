@@ -1,5 +1,6 @@
 import type { PlanRiskAssessment } from '../../types/domain';
 import { LoadingState } from '../ui/LoadingState';
+import { formatNumber } from '../../utils/formatters';
 import styles from './PredictionPanel.module.css';
 
 interface PredictionPanelProps {
@@ -30,12 +31,13 @@ export function PredictionPanel({ assessment, isLoading }: PredictionPanelProps)
   const categories = assessment?.categories ?? [];
   const mode = assessment?.mode ?? 'forecast';
   const confidence = assessment?.confidence ?? 'high';
+  const yieldForecast = assessment?.yieldForecast;
 
   return (
     <article className={styles.card}>
       <header>
-        <h2>Risco climático por cultura</h2>
-        <p>Resultado baseado no plano de safra e no clima previsto.</p>
+        <h2>Risco climático e produtividade</h2>
+        <p>Resultado baseado no plano de safra e nos dados climáticos disponíveis.</p>
       </header>
 
       {isLoading && <LoadingState label="Carregando análise..." size="sm" />}
@@ -65,6 +67,48 @@ export function PredictionPanel({ assessment, isLoading }: PredictionPanelProps)
               <span>Confiabilidade: {confidenceLabel[confidence]}</span>
             </div>
           </div>
+
+          {yieldForecast && (
+            <div className={styles.section}>
+              <h3>Previsão de produtividade</h3>
+              <div className={styles.yieldGrid}>
+                <span>Modelo: {yieldForecast.model}</span>
+                <span>Base: {formatNumber(yieldForecast.baselineYield, 2)} {yieldForecast.unit}</span>
+                <span>
+                  Estimada: {formatNumber(yieldForecast.estimatedYield, 2)} {yieldForecast.unit}
+                </span>
+                <span>
+                  Faixa: {formatNumber(yieldForecast.minYield, 2)}–{formatNumber(yieldForecast.maxYield, 2)}{' '}
+                  {yieldForecast.unit}
+                </span>
+                {yieldForecast.totalProduction !== null && (
+                  <span>
+                    Produção total: {formatNumber(yieldForecast.totalProduction, 2)} t
+                  </span>
+                )}
+                <span>Confiança: {confidenceLabel[yieldForecast.confidence]}</span>
+              </div>
+              {yieldForecast.factors.length > 0 && (
+                <div className={styles.yieldFactors}>
+                  <h4>Fatores de impacto</h4>
+                  <ul>
+                    {yieldForecast.factors.map((factor) => (
+                      <li key={factor.id}>
+                        {factor.label}: {formatNumber(factor.impact, 1)}%
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {yieldForecast.notes.length > 0 && (
+                <div className={styles.yieldNotes}>
+                  {yieldForecast.notes.map((note) => (
+                    <p key={note}>{note}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {notes.length > 0 && (
             <div className={styles.section}>
