@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { FaCloudSunRain, FaDatabase, FaSeedling } from 'react-icons/fa6';
-import { PublicHeader } from '../components/layout/PublicHeader';
 import styles from './HomePage.module.css';
 
 const highlights = [
@@ -33,8 +32,6 @@ const flowSteps = [
 export function HomePage() {
   return (
     <div className={styles.page}>
-      <PublicHeader />
-
       <main className={styles.main}>
         <section className={styles.hero}>
           <div className={styles.heroContent}>

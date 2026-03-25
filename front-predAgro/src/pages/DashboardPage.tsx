@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { FaArrowRotateRight, FaMapLocationDot, FaRightFromBracket, FaUserGear } from 'react-icons/fa6';
-import { Link, useNavigate } from 'react-router-dom';
+import { FaArrowRotateRight, FaMapLocationDot } from 'react-icons/fa6';
+import { Link } from 'react-router-dom';
 import { FieldSummaryList } from '../components/dashboard/FieldSummaryList';
 import { ImportantAlerts } from '../components/dashboard/ImportantAlerts';
 import { PreparedModules } from '../components/dashboard/PreparedModules';
@@ -13,8 +13,7 @@ import type { DashboardOverview } from '../types/domain';
 import styles from './DashboardPage.module.css';
 
 export function DashboardPage() {
-  const navigate = useNavigate();
-  const { token, user, signOut } = useAuth();
+  const { token, user } = useAuth();
   const { showError } = useToast();
 
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
@@ -74,11 +73,6 @@ export function DashboardPage() {
     };
   }, [token, refreshKey, showError]);
 
-  function handleSignOut() {
-    signOut();
-    navigate('/entrar', { replace: true });
-  }
-
   return (
     <main className={styles.page}>
       <section className={styles.container}>
@@ -90,10 +84,6 @@ export function DashboardPage() {
           </div>
 
           <div className={styles.headerActions}>
-            <Link to="/conta" className={styles.outlineButton}>
-              <FaUserGear />
-              Minha conta
-            </Link>
             <Link to="/fazendas" className={styles.outlineButton}>
               <FaMapLocationDot />
               Fazendas
@@ -101,10 +91,6 @@ export function DashboardPage() {
             <button type="button" onClick={() => setRefreshKey((value) => value + 1)} className={styles.outlineButton}>
               <FaArrowRotateRight />
               Atualizar
-            </button>
-            <button type="button" onClick={handleSignOut} className={styles.outlineButton}>
-              <FaRightFromBracket />
-              Sair
             </button>
           </div>
         </header>

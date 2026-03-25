@@ -198,17 +198,6 @@ export function FarmDetailsPage() {
             <button type="button" onClick={openFieldCreateModal} className={styles.primaryButton}>
               + Cadastrar talhão
             </button>
-            <button type="button" onClick={openFarmModal} className={styles.outlineButton} disabled={!farm}>
-              Editar fazenda
-            </button>
-            <button
-              type="button"
-              onClick={handleDeleteFarm}
-              className={styles.dangerButton}
-              disabled={!farm || deletingFarm}
-            >
-              {deletingFarm ? 'Apagando fazenda...' : 'Apagar fazenda'}
-            </button>
             <Link to="/fazendas" className={styles.outlineButton}>
               <FaArrowLeft />
               Voltar para fazendas
@@ -238,18 +227,6 @@ export function FarmDetailsPage() {
                     <button type="button" onClick={() => openFieldEditModal(field)} className={styles.outlineButton}>
                       Editar
                     </button>
-                    <Link
-                      to={`/fazendas/${farmIdValue}/talhoes/${field.id}/delimitacao`}
-                      className={styles.outlineButton}
-                    >
-                      Delimitar
-                    </Link>
-                    <Link
-                      to={`/fazendas/${farmIdValue}/talhoes/${field.id}/planejamento`}
-                      className={styles.outlineButton}
-                    >
-                      Planejar
-                    </Link>
                     <button
                       type="button"
                       onClick={() => handleDeleteField(field)}
