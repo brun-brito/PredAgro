@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa6';
 import { FieldMapEditor } from '../components/maps/FieldMapEditor';
 import { LoadingState } from '../components/ui/LoadingState';
@@ -15,6 +15,7 @@ import styles from './FieldMapPage.module.css';
 
 export function FieldMapPage() {
   const { farmId, fieldId } = useParams();
+  const navigate = useNavigate();
   const { token } = useAuth();
   const { showError, showSuccess } = useToast();
 
@@ -23,11 +24,25 @@ export function FieldMapPage() {
   const [geometryDraft, setGeometryDraft] = useState<FieldGeometry | null>(null);
   const [areaDraft, setAreaDraft] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isResolvingMapBase, setIsResolvingMapBase] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  const [mapBaseLabel, setMapBaseLabel] = useState('Brasil central');
 
   const farmIdValue = useMemo(() => farmId ?? '', [farmId]);
   const fieldIdValue = useMemo(() => fieldId ?? '', [fieldId]);
+  const fieldCenter = useMemo<[number, number] | null>(() => {
+    if (field?.centroidLat === null || field?.centroidLat === undefined) {
+      return null;
+    }
+
+    if (field.centroidLon === null || field.centroidLon === undefined) {
+      return null;
+    }
+
+    return [field.centroidLat, field.centroidLon];
+  }, [field?.centroidLat, field?.centroidLon]);
+  const hasDraftGeometry = Boolean(geometryDraft);
 
   useEffect(() => {
     let isMounted = true;
@@ -100,38 +115,62 @@ export function FieldMapPage() {
   useEffect(() => {
     let isActive = true;
 
-    if (field?.geometry) {
-      setMapCenter(null);
+    if (hasDraftGeometry) {
+      setIsResolvingMapBase(false);
+      setMapCenter(fieldCenter);
+      setMapBaseLabel('Delimitação do talhão');
+      return () => {
+        isActive = false;
+      };
+    }
+
+    if (fieldCenter) {
+      setIsResolvingMapBase(false);
+      setMapCenter(fieldCenter);
+      setMapBaseLabel('Centro do talhão');
       return () => {
         isActive = false;
       };
     }
 
     if (!farm?.city || !farm?.state) {
+      setIsResolvingMapBase(false);
       setMapCenter(null);
+      setMapBaseLabel('Brasil central');
       return () => {
         isActive = false;
       };
     }
+
+    const farmLabel = `${farm.city} - ${farm.state}`;
+    setIsResolvingMapBase(true);
+    setMapBaseLabel(farmLabel);
 
     geocodingService
       .lookupCityState(farm.city, farm.state)
       .then((center) => {
         if (isActive) {
           setMapCenter(center);
+          setMapBaseLabel(farmLabel);
         }
       })
       .catch((error) => {
         if (isActive) {
           setMapCenter(null);
+          setMapBaseLabel('Brasil central');
           showError(error instanceof Error ? error.message : 'Não foi possível localizar a cidade.');
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsResolvingMapBase(false);
         }
       });
 
     return () => {
       isActive = false;
     };
-  }, [farm?.city, farm?.state, field?.geometry, showError]);
+  }, [farm?.city, farm?.state, fieldCenter, hasDraftGeometry, showError]);
 
   async function handleSave() {
     if (!token || !farmIdValue || !fieldIdValue) {
@@ -144,6 +183,7 @@ export function FieldMapPage() {
     }
 
     setIsSaving(true);
+    let shouldReturn = false;
 
     try {
       const response = await fieldService.update(token, farmIdValue, fieldIdValue, { geometry: geometryDraft });
@@ -151,10 +191,17 @@ export function FieldMapPage() {
       setGeometryDraft(response.field.geometry);
       setAreaDraft(response.field.areaHa);
       showSuccess('Delimitação salva com sucesso.');
+      shouldReturn = true;
     } catch (error) {
       showError(resolveErrorMessage(error, 'Não foi possível salvar a delimitação.'));
     } finally {
-      setIsSaving(false);
+      if (!shouldReturn) {
+        setIsSaving(false);
+      }
+    }
+
+    if (shouldReturn) {
+      navigate(`/fazendas/${farmIdValue}/talhoes/${fieldIdValue}`, { replace: true });
     }
   }
 
@@ -164,9 +211,6 @@ export function FieldMapPage() {
       : field?.areaHa !== null && field?.areaHa !== undefined
       ? `${formatNumber(field.areaHa, 2)} ha`
       : 'Não definida';
-
-  const hasDraftGeometry = Boolean(geometryDraft);
-
   return (
     <main className={styles.page}>
       <section className={styles.container}>
@@ -215,7 +259,7 @@ export function FieldMapPage() {
                   </div>
                   <div>
                     <span>Base do mapa</span>
-                    <strong>{farm?.city && farm?.state ? `${farm.city} - ${farm.state}` : 'Brasil central'}</strong>
+                    <strong>{mapBaseLabel}</strong>
                   </div>
                 </div>
                 <p className={styles.helperText}>
@@ -225,29 +269,38 @@ export function FieldMapPage() {
             </section>
 
             <section className={styles.card}>
-              <FieldMapEditor
-                geometry={geometryDraft}
-                center={mapCenter}
-                onGeometryChange={(geometry, areaHa) => {
-                  setGeometryDraft(geometry);
-                  setAreaDraft(areaHa);
-                }}
-                helperContent={
-                  <div className={styles.mapHelper}>
-                    <p>
-                      {hasDraftGeometry
-                        ? 'Polígono desenhado. Se necessário, ajuste os vértices no mapa e salve novamente.'
-                        : 'O desenho ainda não foi iniciado. Use o botão de polígono no canto superior direito do mapa.'}
-                    </p>
+              {isResolvingMapBase ? (
+                <div className={styles.loadingBlock}>
+                  <LoadingState label="Localizando a base do mapa..." />
+                </div>
+              ) : (
+                <>
+                  <FieldMapEditor
+                    geometry={geometryDraft}
+                    center={mapCenter}
+                    viewKey={`${farmIdValue}:${fieldIdValue}`}
+                    onGeometryChange={(geometry, areaHa) => {
+                      setGeometryDraft(geometry);
+                      setAreaDraft(areaHa);
+                    }}
+                    helperContent={
+                      <div className={styles.mapHelper}>
+                        <p>
+                          {hasDraftGeometry
+                            ? 'Polígono desenhado. Se necessário, ajuste os vértices no mapa e salve novamente.'
+                            : 'O desenho ainda não foi iniciado. Use o botão de polígono no canto superior direito do mapa.'}
+                        </p>
+                      </div>
+                    }
+                  />
+                  <div className={styles.cardFooter}>
+                    <span>Área estimada: {areaLabel}</span>
+                    <button type="button" onClick={handleSave} disabled={isSaving} className={styles.primaryButton}>
+                      {isSaving ? 'Salvando...' : 'Salvar delimitação'}
+                    </button>
                   </div>
-                }
-              />
-              <div className={styles.cardFooter}>
-                <span>Área estimada: {areaLabel}</span>
-                <button type="button" onClick={handleSave} disabled={isSaving} className={styles.primaryButton}>
-                  {isSaving ? 'Salvando...' : 'Salvar delimitação'}
-                </button>
-              </div>
+                </>
+              )}
             </section>
           </>
         )}

@@ -11,6 +11,7 @@ interface FieldMapEditorProps {
   geometry: FieldGeometry | null;
   onGeometryChange?: (geometry: FieldGeometry | null, areaHa: number | null) => void;
   center?: [number, number] | null;
+  viewKey?: string;
   readOnly?: boolean;
   helperContent?: ReactNode;
 }
@@ -23,15 +24,26 @@ function computeAreaHa(geometry: FieldGeometry) {
   return Number((areaSquareMeters / 10000).toFixed(4));
 }
 
-function MapViewController({ geometry, center }: { geometry: FieldGeometry | null; center?: [number, number] | null }) {
+function MapViewController({
+  geometry,
+  center,
+  viewKey,
+}: {
+  geometry: FieldGeometry | null;
+  center?: [number, number] | null;
+  viewKey?: string;
+}) {
   const map = useMap();
   const lastGeometryRef = useRef<FieldGeometry | null>(null);
+  const lastViewKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     const hadGeometry = Boolean(lastGeometryRef.current);
+    const isNewView = viewKey !== undefined && lastViewKeyRef.current !== viewKey;
     lastGeometryRef.current = geometry;
+    lastViewKeyRef.current = viewKey ?? null;
 
-    if (geometry && !hadGeometry) {
+    if (geometry && (!hadGeometry || isNewView)) {
       const feature = {
         type: 'Feature',
         geometry,
@@ -47,7 +59,7 @@ function MapViewController({ geometry, center }: { geometry: FieldGeometry | nul
     if (!geometry && center) {
       map.setView(center, 12);
     }
-  }, [geometry, center, map]);
+  }, [geometry, center, map, viewKey]);
 
   return null;
 }
@@ -56,6 +68,7 @@ export function FieldMapEditor({
   geometry,
   onGeometryChange,
   center,
+  viewKey,
   readOnly = false,
   helperContent,
 }: FieldMapEditorProps) {
@@ -117,7 +130,7 @@ export function FieldMapEditor({
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <MapViewController geometry={geometry} center={center} />
+        <MapViewController geometry={geometry} center={center} viewKey={viewKey} />
         {readOnly ? (
           geometry && <GeoJSON data={geometry as never} />
         ) : (

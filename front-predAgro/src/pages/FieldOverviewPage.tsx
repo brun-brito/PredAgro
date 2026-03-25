@@ -219,6 +219,7 @@ export function FieldOverviewPage() {
               {hasGeometry && field?.geometry ? (
                 <FieldMapEditor
                   geometry={field.geometry}
+                  viewKey={`${farmIdValue}:${fieldIdValue}`}
                   readOnly
                   helperContent={
                     <div className={styles.mapHelper}>
