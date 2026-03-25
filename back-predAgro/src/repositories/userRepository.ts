@@ -15,8 +15,14 @@ export async function findById(userId: string): Promise<User | null> {
   return snapshot.data() as User;
 }
 
-export async function upsert({ id, name, email }: Pick<User, 'id' | 'name' | 'email'>): Promise<User> {
+export async function upsert({
+  id,
+  name,
+  email,
+  telefone,
+}: Pick<User, 'id' | 'name' | 'email'> & Pick<Partial<User>, 'telefone'>): Promise<User> {
   const currentUser = await findById(id);
+  const nextTelefone = telefone ?? currentUser?.telefone;
 
   const nextUser: User = {
     id,
@@ -24,6 +30,7 @@ export async function upsert({ id, name, email }: Pick<User, 'id' | 'name' | 'em
     email,
     createdAt: currentUser?.createdAt ?? new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    ...(nextTelefone ? { telefone: nextTelefone } : {}),
   };
 
   await userDoc(id).set(nextUser, { merge: true });

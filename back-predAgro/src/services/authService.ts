@@ -1,5 +1,5 @@
 import { AppError } from '../utils/AppError';
-import { requireEmail, requireString } from '../utils/validators';
+import { requireEmail, requirePhone, requireString } from '../utils/validators';
 import { config } from '../config/env';
 import { firebaseAuth } from '../config/firebaseAdmin';
 import * as userRepository from '../repositories/userRepository';
@@ -37,8 +37,21 @@ export interface AuthCredentials {
   password: string;
 }
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface GoogleAuthPayload {
+  idToken: string;
+}
+
 export interface RegisterPayload extends AuthCredentials {
   name: string;
+  telefone: string;
+}
+
+export interface MessageResponse {
+  message: string;
 }
 
 function ensureFirebaseWebApiKey() {
@@ -47,9 +60,12 @@ function ensureFirebaseWebApiKey() {
   }
 }
 
+function getFirebaseErrorCode(rawError: FirebaseAuthErrorResponse) {
+  return String(rawError?.error?.message ?? 'UNKNOWN').split(':')[0].trim();
+}
+
 function mapFirebaseError(rawError: FirebaseAuthErrorResponse) {
-  const message = String(rawError?.error?.message ?? 'UNKNOWN');
-  const code = message.split(':')[0].trim();
+  const code = getFirebaseErrorCode(rawError);
 
   if (firebaseErrorMap[code]) {
     return firebaseErrorMap[code];
@@ -89,16 +105,37 @@ async function requestFirebaseAuth(action: string, payload: Record<string, unkno
   return body;
 }
 
-async function syncUser(userInput: Pick<User, 'id' | 'name' | 'email'>) {
+function isEmailNotFoundError(error: unknown) {
+  if (!(error instanceof AppError) || !error.details || typeof error.details !== 'object') {
+    return false;
+  }
+
+  return getFirebaseErrorCode({ error: error.details as { message?: string } }) === 'EMAIL_NOT_FOUND';
+}
+
+async function syncUser(userInput: Pick<User, 'id' | 'name' | 'email'> & Pick<Partial<User>, 'telefone'>) {
   return userRepository.upsert({
     id: userInput.id,
     name: userInput.name,
     email: userInput.email,
+    telefone: userInput.telefone,
   });
+}
+
+function resolveUserName(displayName: string | null | undefined, email: string) {
+  const normalizedDisplayName = displayName?.trim();
+
+  if (normalizedDisplayName) {
+    return normalizedDisplayName;
+  }
+
+  const emailPrefix = email.split('@')[0]?.trim();
+  return emailPrefix || 'Usuário PredAgro';
 }
 
 export async function register(payload: RegisterPayload): Promise<AuthResponse> {
   const name = requireString(payload.name, 'name', 3);
+  const telefone = requirePhone(payload.telefone);
   const email = requireEmail(payload.email);
   const password = requireString(payload.password, 'password', 6);
 
@@ -116,6 +153,7 @@ export async function register(payload: RegisterPayload): Promise<AuthResponse> 
     id: signUpResponse.localId,
     name,
     email,
+    telefone,
   });
 
   return {
@@ -146,4 +184,62 @@ export async function login(payload: AuthCredentials): Promise<AuthResponse> {
     user,
     token: signInResponse.idToken,
   };
+}
+
+export async function authenticateWithGoogle(payload: GoogleAuthPayload): Promise<AuthResponse> {
+  const idToken = requireString(payload.idToken, 'idToken', 10);
+
+  let decodedToken;
+
+  try {
+    decodedToken = await firebaseAuth.verifyIdToken(idToken);
+  } catch {
+    throw new AppError('Falha ao validar autenticação com Google.', 401);
+  }
+
+  if (decodedToken.firebase.sign_in_provider !== 'google.com') {
+    throw new AppError('Conta Google inválida para autenticação.', 400);
+  }
+
+  const authUser = await firebaseAuth.getUser(decodedToken.uid);
+  const email = authUser.email ?? (typeof decodedToken.email === 'string' ? decodedToken.email : '');
+
+  if (!email) {
+    throw new AppError('Conta Google sem e-mail válido.', 400);
+  }
+
+  const decodedName =
+    'name' in decodedToken && typeof decodedToken.name === 'string' ? decodedToken.name : undefined;
+
+  const user = await syncUser({
+    id: authUser.uid,
+    name: resolveUserName(authUser.displayName ?? decodedName, email),
+    email,
+  });
+
+  return {
+    user,
+    token: idToken,
+  };
+}
+
+export async function forgotPassword(payload: ForgotPasswordPayload): Promise<MessageResponse> {
+  const email = requireEmail(payload.email);
+  const message =
+    'Se houver uma conta com este e-mail, enviaremos as instruções para redefinir a senha.';
+
+  try {
+    await requestFirebaseAuth('sendOobCode', {
+      requestType: 'PASSWORD_RESET',
+      email,
+    });
+  } catch (error) {
+    if (isEmailNotFoundError(error)) {
+      return { message };
+    }
+
+    throw error;
+  }
+
+  return { message };
 }

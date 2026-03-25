@@ -170,6 +170,8 @@ export function FieldMapPage() {
       ? `${formatNumber(field.areaHa, 2)} ha`
       : 'Não definida';
 
+  const hasDraftGeometry = Boolean(geometryDraft);
+
   return (
     <main className={styles.page}>
       <section className={styles.container}>
@@ -195,22 +197,67 @@ export function FieldMapPage() {
             <LoadingState label="Carregando delimitação..." />
           </div>
         ) : (
-          <section className={styles.card}>
-            <FieldMapEditor
-              geometry={geometryDraft}
-              center={mapCenter}
-              onGeometryChange={(geometry, areaHa) => {
-                setGeometryDraft(geometry);
-                setAreaDraft(areaHa);
-              }}
-            />
-            <div className={styles.cardFooter}>
-              <span>Área estimada: {areaLabel}</span>
-              <button type="button" onClick={handleSave} disabled={isSaving} className={styles.primaryButton}>
-                {isSaving ? 'Salvando...' : 'Salvar delimitação'}
-              </button>
-            </div>
-          </section>
+          <>
+            <section className={styles.guideGrid}>
+              <article className={styles.guideCard}>
+                <h2>Passo a passo para delimitar</h2>
+                <ol className={styles.stepList}>
+                  <li>Aproxime o mapa até enxergar a área real do talhão.</li>
+                  <li>Clique no ícone de polígono no canto superior direito do mapa.</li>
+                  <li>Marque os pontos ao redor da área; no último ponto, clique novamente no primeiro para fechar.</li>
+                  <li>Se precisar ajustar, use a ferramenta de edição para mover os vértices ou a lixeira para começar de novo.</li>
+                  <li>Confira a área estimada abaixo do mapa e clique em salvar.</li>
+                </ol>
+              </article>
+
+              <article className={styles.statusCard}>
+                <h2>Status da delimitação</h2>
+                <div className={styles.statusList}>
+                  <div>
+                    <span>Situação</span>
+                    <strong>{hasDraftGeometry ? 'Polígono pronto para salvar' : 'Aguardando desenho'}</strong>
+                  </div>
+                  <div>
+                    <span>Área estimada</span>
+                    <strong>{areaLabel}</strong>
+                  </div>
+                  <div>
+                    <span>Base do mapa</span>
+                    <strong>{farm?.city && farm?.state ? `${farm.city} - ${farm.state}` : 'Brasil central'}</strong>
+                  </div>
+                </div>
+                <p className={styles.helperText}>
+                  Dica: quanto mais você aproximar antes de desenhar, mais fácil fica encaixar o contorno do talhão.
+                </p>
+              </article>
+            </section>
+
+            <section className={styles.card}>
+              <FieldMapEditor
+                geometry={geometryDraft}
+                center={mapCenter}
+                onGeometryChange={(geometry, areaHa) => {
+                  setGeometryDraft(geometry);
+                  setAreaDraft(areaHa);
+                }}
+                helperContent={
+                  <div className={styles.mapHelper}>
+                    <p>
+                      {hasDraftGeometry
+                        ? 'Polígono desenhado. Se necessário, ajuste os vértices no mapa e salve novamente.'
+                        : 'O desenho ainda não foi iniciado. Use o botão de polígono no canto superior direito do mapa.'}
+                    </p>
+                  </div>
+                }
+              />
+              <div className={styles.cardFooter}>
+                <span>Área estimada: {areaLabel}</span>
+                <button type="button" onClick={handleSave} disabled={isSaving} className={styles.primaryButton}>
+                  {isSaving ? 'Salvando...' : 'Salvar delimitação'}
+                </button>
+              </div>
+            </section>
+          </>
         )}
       </section>
     </main>

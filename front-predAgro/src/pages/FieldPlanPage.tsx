@@ -33,6 +33,7 @@ export function FieldPlanPage() {
   const [isPlanLoading, setIsPlanLoading] = useState(true);
   const [isRiskLoading, setIsRiskLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
 
   const farmIdValue = useMemo(() => farmId ?? '', [farmId]);
   const fieldIdValue = useMemo(() => fieldId ?? '', [fieldId]);
@@ -340,6 +341,45 @@ export function FieldPlanPage() {
     void loadRisk(planId, token, farmIdValue, fieldIdValue, Boolean(field?.geometry));
   }
 
+  async function handleDeletePlan(plan: PlantingPlan) {
+    if (!token || !farmIdValue || !fieldIdValue) {
+      return;
+    }
+
+    const cropName = cropMap.get(plan.cropId) ?? plan.cropId;
+    const shouldDelete = window.confirm(
+      `Deseja apagar a análise de ${cropName} criada para o período de ${plan.startDate} até ${plan.endDate}?`
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    setDeletingPlanId(plan.id);
+    setPlanFeedback(null);
+
+    try {
+      await planService.remove(token, farmIdValue, fieldIdValue, plan.id);
+
+      const remainingPlans = plans.filter((item) => item.id !== plan.id);
+      setPlans(remainingPlans);
+
+      if (selectedPlanId === plan.id) {
+        const nextPlan = remainingPlans[0] ?? null;
+        setSelectedPlanId(nextPlan?.id ?? null);
+        setAssessment(null);
+
+        if (nextPlan) {
+          await loadRisk(nextPlan.id, token, farmIdValue, fieldIdValue, Boolean(field?.geometry));
+        }
+      }
+    } catch (error) {
+      setPlanFeedback(error instanceof ApiError ? error.message : 'Não foi possível apagar a análise.');
+    } finally {
+      setDeletingPlanId(null);
+    }
+  }
+
   return (
     <main className={styles.page}>
       <section className={styles.container}>
@@ -439,9 +479,19 @@ export function FieldPlanPage() {
                             {plan.startDate} até {plan.endDate}
                           </span>
                         </div>
-                        <button type="button" onClick={() => handleSelectPlan(plan.id)}>
-                          Ver análise
-                        </button>
+                        <div className={styles.planItemActions}>
+                          <button type="button" onClick={() => handleSelectPlan(plan.id)}>
+                            Ver análise
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePlan(plan)}
+                            className={styles.deleteButton}
+                            disabled={deletingPlanId === plan.id}
+                          >
+                            {deletingPlanId === plan.id ? 'Apagando...' : 'Apagar'}
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>

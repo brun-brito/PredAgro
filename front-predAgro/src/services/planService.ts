@@ -1,5 +1,5 @@
 import { apiClient } from './httpClient';
-import { getCache, setCache } from '../utils/cache';
+import { getCache, invalidateCache, setCache } from '../utils/cache';
 import type { PlanRiskAssessment, PlantingPlan } from '../types/domain';
 
 export interface PlanPayload {
@@ -20,6 +20,19 @@ function updatePlanListCache(token: string, farmId: string, fieldId: string, pla
   }
   const plans = [plan, ...cached.plans];
   setCache(planListKey(token, farmId, fieldId), { plans });
+}
+
+function removePlanCaches(token: string, farmId: string, fieldId: string, planId: string) {
+  invalidateCache(planRiskKey(token, farmId, fieldId, planId));
+
+  const cached = getCache<{ plans: PlantingPlan[] }>(planListKey(token, farmId, fieldId));
+  if (!cached) {
+    return;
+  }
+
+  setCache(planListKey(token, farmId, fieldId), {
+    plans: cached.plans.filter((plan) => plan.id !== planId),
+  });
 }
 
 export const planService = {
@@ -51,5 +64,9 @@ export const planService = {
     );
     setCache(planRiskKey(token, farmId, fieldId, planId), response);
     return response;
+  },
+  remove: async (token: string, farmId: string, fieldId: string, planId: string) => {
+    await apiClient.delete<void>(`/farms/${farmId}/fields/${fieldId}/plans/${planId}`, { token });
+    removePlanCaches(token, farmId, fieldId, planId);
   },
 };

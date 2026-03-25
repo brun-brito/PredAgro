@@ -146,6 +146,23 @@
   cursor: pointer;
 }
 
+.planItemActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.deleteButton {
+  border-color: rgba(191, 65, 47, 0.28) !important;
+  color: var(--danger) !important;
+}
+
+.deleteButton:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
 .activePlan {
   border-color: rgba(63, 155, 104, 0.6);
   box-shadow: 0 0 0 2px rgba(63, 155, 104, 0.12);
@@ -182,5 +199,15 @@
 
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .planList li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .planItemActions {
+    width: 100%;
+    justify-content: flex-start;
   }
 }

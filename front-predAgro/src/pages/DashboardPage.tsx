@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FaArrowRotateRight, FaMapLocationDot, FaRightFromBracket } from 'react-icons/fa6';
+import { FaArrowRotateRight, FaMapLocationDot, FaRightFromBracket, FaUserGear } from 'react-icons/fa6';
 import { Link, useNavigate } from 'react-router-dom';
 import { FieldSummaryList } from '../components/dashboard/FieldSummaryList';
 import { ImportantAlerts } from '../components/dashboard/ImportantAlerts';
@@ -87,6 +87,10 @@ export function DashboardPage() {
           </div>
 
           <div className={styles.headerActions}>
+            <Link to="/conta" className={styles.outlineButton}>
+              <FaUserGear />
+              Minha conta
+            </Link>
             <Link to="/fazendas" className={styles.outlineButton}>
               <FaMapLocationDot />
               Fazendas
@@ -124,7 +128,7 @@ export function DashboardPage() {
           <p className={styles.emptyState}>Nenhum dado disponível para exibir no painel.</p>
         )}
 
-        <PreparedModules />
+        <PreparedModules overview={overview} isLoading={isLoading} />
       </section>
     </main>
   );

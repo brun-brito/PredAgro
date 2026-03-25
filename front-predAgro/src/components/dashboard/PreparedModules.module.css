@@ -33,6 +33,42 @@
   padding: 18px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(237, 244, 241, 0.7));
   display: grid;
+  gap: 14px;
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.iconWrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background-color: rgba(22, 86, 58, 0.08);
+  color: var(--green-900);
+}
+
+.iconWrap svg {
+  font-size: 1.05rem;
+}
+
+.badge {
+  width: fit-content;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--green-900);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background-color: var(--green-100);
+}
+
+.cardContent {
+  display: grid;
   gap: 10px;
 }
 
@@ -45,14 +81,40 @@
   line-height: 1.42;
 }
 
-.card span {
-  width: fit-content;
-  font-size: 0.78rem;
+.actionLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 700;
   color: var(--green-900);
-  border-radius: 999px;
-  padding: 6px 10px;
-  background-color: var(--green-100);
+}
+
+.default {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(237, 244, 241, 0.72));
+}
+
+.attention {
+  background: linear-gradient(180deg, rgba(255, 248, 239, 0.98), rgba(255, 243, 219, 0.78));
+  border-color: rgba(197, 127, 27, 0.24);
+}
+
+.attention .iconWrap {
+  background-color: rgba(197, 127, 27, 0.12);
+  color: #8a5411;
+}
+
+.attention .badge {
+  background-color: rgba(197, 127, 27, 0.14);
+  color: #8a5411;
+}
+
+.success {
+  background: linear-gradient(180deg, rgba(241, 250, 245, 0.98), rgba(223, 242, 232, 0.82));
+}
+
+.footerNote {
+  color: var(--slate-600);
+  font-size: 0.88rem;
 }
 
 @media (max-width: 1100px) {

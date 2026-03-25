@@ -19,6 +19,16 @@ export function requireEmail(value: unknown) {
   return email;
 }
 
+export function requirePhone(value: unknown) {
+  const phone = requireString(value, 'telefone', 8).replace(/\D/g, '');
+
+  if (phone.length < 8 || phone.length > 15) {
+    throw new AppError('Campo telefone inválido.', 400);
+  }
+
+  return phone;
+}
+
 export function requireNumber(value: unknown, fieldName: string, min?: number, max?: number) {
   const numberValue = Number(value);
 

@@ -1,5 +1,4 @@
 import { Link, NavLink } from 'react-router-dom';
-import { FaChartLine } from 'react-icons/fa6';
 import styles from './PublicHeader.module.css';
 
 const linkClassName = ({ isActive }: { isActive: boolean }) =>
@@ -10,9 +9,7 @@ export function PublicHeader() {
     <header className={styles.header}>
       <div className={styles.container}>
         <Link to="/" className={styles.brand}>
-          <span className={styles.brandIcon}>
-            <FaChartLine />
-          </span>
+          <img className={styles.brandIcon} src="/favicon.svg" alt="" aria-hidden="true" />
           <span>PredAgro</span>
         </Link>
 

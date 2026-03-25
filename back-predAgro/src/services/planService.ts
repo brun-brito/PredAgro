@@ -124,3 +124,8 @@ export async function updateRiskCache(
     updatedAt: new Date().toISOString(),
   });
 }
+
+export async function remove(userId: string, farmId: string, fieldId: string, planId: string) {
+  await getById(userId, farmId, fieldId, planId);
+  await planRepository.remove(userId, farmId, fieldId, planId);
+}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { MapContainer, TileLayer, FeatureGroup, GeoJSON, useMap } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import type { FeatureGroup as LeafletFeatureGroup } from 'leaflet';
@@ -9,8 +9,10 @@ import styles from './FieldMapEditor.module.css';
 
 interface FieldMapEditorProps {
   geometry: FieldGeometry | null;
-  onGeometryChange: (geometry: FieldGeometry | null, areaHa: number | null) => void;
+  onGeometryChange?: (geometry: FieldGeometry | null, areaHa: number | null) => void;
   center?: [number, number] | null;
+  readOnly?: boolean;
+  helperContent?: ReactNode;
 }
 
 const defaultCenter: [number, number] = [-14.235, -51.9253];
@@ -50,11 +52,21 @@ function MapViewController({ geometry, center }: { geometry: FieldGeometry | nul
   return null;
 }
 
-export function FieldMapEditor({ geometry, onGeometryChange, center }: FieldMapEditorProps) {
+export function FieldMapEditor({
+  geometry,
+  onGeometryChange,
+  center,
+  readOnly = false,
+  helperContent,
+}: FieldMapEditorProps) {
   const featureGroupRef = useRef<LeafletFeatureGroup>(null);
 
   const handleCreated = useCallback(
     (event: any) => {
+      if (!onGeometryChange) {
+        return;
+      }
+
       const featureGroup = featureGroupRef.current;
 
       if (featureGroup) {
@@ -72,6 +84,10 @@ export function FieldMapEditor({ geometry, onGeometryChange, center }: FieldMapE
 
   const handleEdited = useCallback(
     (event: any) => {
+      if (!onGeometryChange) {
+        return;
+      }
+
       const layers = event.layers.getLayers() as Array<{ toGeoJSON: () => { geometry: FieldGeometry } }>;
 
       if (layers.length === 0) {
@@ -87,6 +103,10 @@ export function FieldMapEditor({ geometry, onGeometryChange, center }: FieldMapE
   );
 
   const handleDeleted = useCallback(() => {
+    if (!onGeometryChange) {
+      return;
+    }
+
     onGeometryChange(null, null);
   }, [onGeometryChange]);
 
@@ -98,25 +118,37 @@ export function FieldMapEditor({ geometry, onGeometryChange, center }: FieldMapE
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <MapViewController geometry={geometry} center={center} />
-        <FeatureGroup ref={featureGroupRef}>
-          <EditControl
-            position="topright"
-            onCreated={handleCreated}
-            onEdited={handleEdited}
-            onDeleted={handleDeleted}
-            draw={{
-              rectangle: false,
-              polyline: false,
-              circle: false,
-              circlemarker: false,
-              marker: false,
-              polygon: true,
-            }}
-          />
-          {geometry && <GeoJSON data={geometry as never} />}
-        </FeatureGroup>
+        {readOnly ? (
+          geometry && <GeoJSON data={geometry as never} />
+        ) : (
+          <FeatureGroup ref={featureGroupRef}>
+            <EditControl
+              position="topright"
+              onCreated={handleCreated}
+              onEdited={handleEdited}
+              onDeleted={handleDeleted}
+              draw={{
+                rectangle: false,
+                polyline: false,
+                circle: false,
+                circlemarker: false,
+                marker: false,
+                polygon: true,
+              }}
+            />
+            {geometry && <GeoJSON data={geometry as never} />}
+          </FeatureGroup>
+        )}
       </MapContainer>
-      {geometry && <p className={styles.helperText}>Área delimitada carregada. Você pode editar o polígono.</p>}
+      {helperContent ? (
+        <div className={styles.helperPanel}>{helperContent}</div>
+      ) : (
+        geometry && (
+          <p className={styles.helperText}>
+            {readOnly ? 'Visualização da delimitação cadastrada para este talhão.' : 'Área delimitada carregada. Você pode editar o polígono.'}
+          </p>
+        )
+      )}
     </div>
   );
 }

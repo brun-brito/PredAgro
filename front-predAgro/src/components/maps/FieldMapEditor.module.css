@@ -16,3 +16,8 @@
   color: var(--slate-700);
   font-size: 0.9rem;
 }
+
+.helperPanel {
+  padding: 14px 16px;
+  background-color: rgba(63, 155, 104, 0.08);
+}

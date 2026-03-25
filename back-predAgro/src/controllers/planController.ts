@@ -40,6 +40,17 @@ export async function createPlan(req: Request, res: Response) {
   });
 }
 
+export async function deletePlan(req: Request, res: Response) {
+  await planService.remove(
+    req.user!.id,
+    String(req.params.farmId),
+    String(req.params.fieldId),
+    String(req.params.planId)
+  );
+
+  res.status(204).send();
+}
+
 export async function getPlanRisk(req: Request, res: Response) {
   const assessment = await planRiskService.getPlanRisk(
     req.user!.id,

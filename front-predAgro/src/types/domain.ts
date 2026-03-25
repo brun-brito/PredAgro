@@ -2,6 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  telefone?: string;
 }
 
 export interface AuthCredentials {
@@ -11,11 +12,24 @@ export interface AuthCredentials {
 
 export interface RegisterPayload extends AuthCredentials {
   name: string;
+  telefone: string;
 }
 
 export interface AuthResponse {
   user: User;
   token: string;
+}
+
+export interface AccountProfile {
+  user: User;
+  authProvider: string;
+  emailEditable: boolean;
+}
+
+export interface UpdateProfilePayload {
+  name: string;
+  email: string;
+  telefone: string;
 }
 
 export interface Farm {

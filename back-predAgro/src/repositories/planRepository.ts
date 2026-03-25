@@ -67,3 +67,7 @@ export async function update(
 ): Promise<void> {
   await plansCollection(userId, farmId, fieldId).doc(planId).set(planInput, { merge: true });
 }
+
+export async function remove(userId: string, farmId: string, fieldId: string, planId: string): Promise<void> {
+  await plansCollection(userId, farmId, fieldId).doc(planId).delete();
+}

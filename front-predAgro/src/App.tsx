@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { PrivateRoute } from './components/routing/PrivateRoute';
 import { AuthPage } from './pages/AuthPage';
+import { AccountPage } from './pages/AccountPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { FarmDetailsPage } from './pages/FarmDetailsPage';
 import { FarmsPage } from './pages/FarmsPage';
@@ -18,6 +19,7 @@ function App() {
 
       <Route element={<PrivateRoute />}>
         <Route path="/painel" element={<DashboardPage />} />
+        <Route path="/conta" element={<AccountPage />} />
         <Route path="/fazendas" element={<FarmsPage />} />
         <Route path="/fazendas/:farmId" element={<FarmDetailsPage />} />
         <Route path="/fazendas/:farmId/talhoes/:fieldId/delimitacao" element={<FieldMapPage />} />
