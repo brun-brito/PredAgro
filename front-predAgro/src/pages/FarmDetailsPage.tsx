@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa6';
 import { farmService } from '../services/farmService';
 import { fieldService } from '../services/fieldService';
@@ -15,7 +15,6 @@ import styles from './FarmDetailsPage.module.css';
 
 export function FarmDetailsPage() {
   const { farmId } = useParams();
-  const navigate = useNavigate();
   const { token } = useAuth();
   const { showError, showSuccess } = useToast();
 
@@ -25,7 +24,6 @@ export function FarmDetailsPage() {
   const [isFarmModalOpen, setIsFarmModalOpen] = useState(false);
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
   const [editingField, setEditingField] = useState<Field | null>(null);
-  const [deletingFarm, setDeletingFarm] = useState(false);
   const [deletingFieldId, setDeletingFieldId] = useState<string | null>(null);
 
   const farmIdValue = useMemo(() => farmId ?? '', [farmId]);
@@ -95,12 +93,6 @@ export function FarmDetailsPage() {
     };
   }, [token, farmIdValue, showError]);
 
-  function openFarmModal() {
-    if (!farm) {
-      return;
-    }
-    setIsFarmModalOpen(true);
-  }
 
   function openFieldCreateModal() {
     setEditingField(null);
@@ -132,31 +124,6 @@ export function FarmDetailsPage() {
       }
       return current.map((item) => (item.id === nextField.id ? nextField : item));
     });
-  }
-
-  async function handleDeleteFarm() {
-    if (!token || !farm) {
-      return;
-    }
-
-    const shouldDelete = window.confirm(
-      `Deseja apagar a fazenda ${farm.name}? Isso também removerá seus talhões, planejamentos, análises e previsões salvas.`
-    );
-
-    if (!shouldDelete) {
-      return;
-    }
-
-    setDeletingFarm(true);
-
-    try {
-      await farmService.remove(token, farm.id);
-      showSuccess('Fazenda apagada com sucesso.');
-      navigate('/fazendas', { replace: true });
-    } catch (error) {
-      showError(resolveErrorMessage(error, 'Não foi possível apagar a fazenda.'));
-      setDeletingFarm(false);
-    }
   }
 
   async function handleDeleteField(field: Field) {
