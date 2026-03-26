@@ -5,7 +5,7 @@ import styles from './Modal.module.css';
 interface ModalProps {
   isOpen: boolean;
   title?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   onClose: () => void;
   children: ReactNode;
 }
