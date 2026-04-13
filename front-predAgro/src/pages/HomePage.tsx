@@ -113,7 +113,7 @@ export function HomePage() {
         <section className={styles.hero}>
           <div className={styles.heroContent}>
             <p className={styles.eyebrow}>Planejamento agrícola com foco em decisão</p>
-            <h1 className={styles.title}>PredAgro: dados climáticos e previsão para pequenas e médias propriedades</h1>
+            <h1 className={styles.title}>PredAgro: dados climáticos e análise agroclimática para pequenas e médias propriedades</h1>
             <p className={styles.description}>
               Plataforma web para apoiar agricultores no planejamento de safra com informações objetivas,
               histórico de dados e evolução gradual para modelos de inteligência artificial.
