@@ -26,31 +26,31 @@ export function evaluateRisk(days: WeatherDay[]): Omit<PredictionRisk, 'fieldId'
 
   if (totalPrecip < 5 && maxTemp >= 32) {
     riskLevel = 'HIGH';
-    pushReason(reasons, 'Pouca chuva e temperatura elevada nos próximos dias.');
-    pushRecommendation(recommendations, 'Priorize irrigação e monitoramento de umidade do solo.');
+    pushReason(reasons, 'Pouca chuva e temperatura elevada no curto prazo do milho.');
+    pushRecommendation(recommendations, 'Priorize irrigação suplementar e monitore a umidade do solo do milho.');
   }
 
   if (totalPrecip < 10 && riskLevel !== 'HIGH') {
     riskLevel = 'MEDIUM';
-    pushReason(reasons, 'Volume de chuva abaixo do ideal no curto prazo.');
-    pushRecommendation(recommendations, 'Considere ajustar manejo hídrico e revisar calendário de aplicação.');
+    pushReason(reasons, 'Volume de chuva abaixo do ideal para a janela atual do milho.');
+    pushRecommendation(recommendations, 'Revise o manejo hídrico e reavalie as operações previstas para o talhão.');
   }
 
   if (totalPrecip > 60) {
     riskLevel = riskLevel === 'HIGH' ? 'HIGH' : 'MEDIUM';
-    pushReason(reasons, 'Acúmulo de chuva alto no período, risco de encharcamento.');
-    pushRecommendation(recommendations, 'Avalie drenagem e evite tráfego intenso nas áreas úmidas.');
+    pushReason(reasons, 'Acúmulo de chuva elevado no período, com risco de encharcamento para o milho.');
+    pushRecommendation(recommendations, 'Avalie drenagem, compactação e evite tráfego intenso nas áreas úmidas.');
   }
 
   if (tempVariation >= 12 && riskLevel === 'LOW') {
     riskLevel = 'MEDIUM';
-    pushReason(reasons, 'Variação térmica acentuada nos próximos dias.');
-    pushRecommendation(recommendations, 'Redobre atenção ao manejo de estresse térmico.');
+    pushReason(reasons, 'Variação térmica acentuada para os próximos dias do milho.');
+    pushRecommendation(recommendations, 'Redobre a atenção ao estresse térmico e à evolução fenológica do milho.');
   }
 
   if (reasons.length === 0) {
-    pushReason(reasons, 'Condições climáticas dentro da faixa esperada.');
-    pushRecommendation(recommendations, 'Mantenha o acompanhamento diário dos indicadores.');
+    pushReason(reasons, 'Condições climáticas dentro da faixa operacional esperada para o milho.');
+    pushRecommendation(recommendations, 'Mantenha o acompanhamento diário da chuva, temperatura e umidade do solo.');
   }
 
   return {

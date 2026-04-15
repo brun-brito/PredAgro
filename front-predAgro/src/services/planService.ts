@@ -1,11 +1,10 @@
 import { apiClient } from './httpClient';
 import { getCache, invalidateCache, setCache } from '../utils/cache';
-import type { PlanRiskAssessment, PlantingPlan } from '../types/domain';
+import type { PlanCycleEstimate, PlanRiskAssessment, PlantingPlan } from '../types/domain';
 
 export interface PlanPayload {
   cropId: string;
   startDate: string;
-  endDate: string;
 }
 
 const planListKey = (token: string, farmId: string, fieldId: string) =>
@@ -20,6 +19,16 @@ function updatePlanListCache(token: string, farmId: string, fieldId: string, pla
   }
   const plans = [plan, ...cached.plans];
   setCache(planListKey(token, farmId, fieldId), { plans });
+}
+
+function updatePlanRiskCache(
+  token: string,
+  farmId: string,
+  fieldId: string,
+  planId: string,
+  assessment: PlanRiskAssessment
+) {
+  setCache(planRiskKey(token, farmId, fieldId, planId), { assessment });
 }
 
 function removePlanCaches(token: string, farmId: string, fieldId: string, planId: string) {
@@ -49,13 +58,24 @@ export const planService = {
     return response;
   },
   create: async (token: string, farmId: string, fieldId: string, payload: PlanPayload) => {
-    const response = await apiClient.post<{ plan: PlantingPlan }>(
+    const response = await apiClient.post<{ plan: PlantingPlan; assessment: PlanRiskAssessment }>(
       `/farms/${farmId}/fields/${fieldId}/plans`,
       payload,
       { token }
     );
     updatePlanListCache(token, farmId, fieldId, response.plan);
+    updatePlanRiskCache(token, farmId, fieldId, response.plan.id, response.assessment);
     return response;
+  },
+  estimateCycle: async (token: string, farmId: string, fieldId: string, payload: PlanPayload) => {
+    const params = new URLSearchParams({
+      cropId: payload.cropId,
+      startDate: payload.startDate,
+    });
+    return apiClient.get<{ estimate: PlanCycleEstimate }>(
+      `/farms/${farmId}/fields/${fieldId}/plans/estimate?${params.toString()}`,
+      { token }
+    );
   },
   getRisk: async (token: string, farmId: string, fieldId: string, planId: string) => {
     const response = await apiClient.get<{ assessment: PlanRiskAssessment }>(

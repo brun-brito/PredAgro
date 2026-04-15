@@ -218,7 +218,7 @@ export function FieldMapPage() {
           <div>
             <p className={styles.eyebrow}>Delimitação</p>
             <h1>{field?.name ?? 'Talhão selecionado'}</h1>
-            <p className={styles.subtitle}>Desenhe o polígono do talhão para liberar previsões e análise.</p>
+            <p className={styles.subtitle}>Desenhe o polígono do talhão para liberar a análise espacial desta etapa da plataforma.</p>
           </div>
           <div className={styles.headerActions}>
             <Link to={`/fazendas/${farmIdValue}/talhoes/${fieldIdValue}`} className={styles.outlineButton}>

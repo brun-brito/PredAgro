@@ -208,7 +208,7 @@ export function FarmDetailsPage() {
             </div>
           )}
 
-          {!isLoading && fields.length === 0 && <p className={styles.emptyState}>Nenhum talhão cadastrado.</p>}
+          {!isLoading && fields.length === 0 && <p className={styles.emptyState}>Nenhum talhão cadastrado para a operação atual.</p>}
         </section>
       </section>
       <FarmFormModal

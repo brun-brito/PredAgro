@@ -34,9 +34,32 @@ export async function createPlan(req: Request, res: Response) {
     String(req.params.fieldId),
     req.body
   );
+  const assessment = await planRiskService.getPlanRisk(
+    req.user!.id,
+    String(req.params.farmId),
+    String(req.params.fieldId),
+    plan.id
+  );
 
   res.status(201).json({
     plan,
+    assessment,
+  });
+}
+
+export async function estimatePlanCycle(req: Request, res: Response) {
+  const estimate = await planService.estimateCycle(
+    req.user!.id,
+    String(req.params.farmId),
+    String(req.params.fieldId),
+    {
+      cropId: String(req.query.cropId ?? ''),
+      startDate: String(req.query.startDate ?? ''),
+    }
+  );
+
+  res.status(200).json({
+    estimate,
   });
 }
 

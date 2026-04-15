@@ -45,7 +45,7 @@ function buildClimateAction(fields: DashboardFieldSummary[]): ActionCard {
     return {
       title: 'Cobertura climática pendente',
       description:
-        'Há talhões sem previsão disponível. Delimite primeiro os pendentes para liberar monitoramento e risco climático.',
+        'Há talhões sem previsão disponível. Delimite primeiro os pendentes para liberar a leitura climática.',
       badge: `${pendingCount} pendente${pendingCount > 1 ? 's' : ''}`,
       ctaLabel: 'Delimitar primeiro talhão',
       to: `/fazendas/${pendingField.farmId}/talhoes/${pendingField.fieldId}/delimitacao`,
@@ -103,10 +103,10 @@ function buildPlanningAction(overview: DashboardOverview | null): ActionCard {
 
   if (firstField) {
     return {
-      title: highAttentionAlerts > 0 ? 'Planeje com alertas ativos' : 'Monte o próximo plano de safra',
+      title: highAttentionAlerts > 0 ? 'Planeje com alertas ativos' : 'Monte o próximo plano',
       description:
         highAttentionAlerts > 0
-          ? 'Há alertas pedindo atenção. Use o planejamento para ajustar cultura, datas e exposição ao risco.'
+          ? 'Há alertas pedindo atenção. Use o planejamento para ajustar datas, janela de plantio e exposição ao risco.'
           : 'Transforme a previsão em decisão operacional com um plano de plantio e avaliação de risco por talhão.',
       badge: highAttentionAlerts > 0 ? `${highAttentionAlerts} alerta${highAttentionAlerts > 1 ? 's' : ''}` : 'Próxima etapa',
       ctaLabel: 'Abrir planejamento',
@@ -118,7 +118,7 @@ function buildPlanningAction(overview: DashboardOverview | null): ActionCard {
 
   return {
     title: 'Planejamento depende da estrutura básica',
-    description: 'Antes de montar cenários de safra, organize fazendas e talhões com a área produtiva inicial.',
+    description: 'Antes de montar cenários de plantio, organize fazendas e talhões com a área produtiva inicial.',
     badge: 'Aguardando base',
     ctaLabel: 'Organizar fazendas',
     to: '/fazendas',
@@ -138,7 +138,7 @@ function buildActionCards(overview: DashboardOverview | null): ActionCard[] {
           description:
             totals.fields > 0
               ? 'Sua base produtiva já está montada. Agora vale acelerar cobertura climática e planejamento por talhão.'
-              : 'Você já cadastrou fazendas, mas ainda precisa abrir os talhões para liberar previsão e análise agrícola.',
+              : 'Você já cadastrou fazendas, mas ainda precisa abrir os talhões para liberar previsão e análise climática.',
           badge: `${totals.farms} fazenda${totals.farms > 1 ? 's' : ''}`,
           ctaLabel: 'Gerenciar fazendas',
           to: '/fazendas',
@@ -165,7 +165,7 @@ export function PreparedModules({ overview, isLoading }: PreparedModulesProps) {
     <section className={styles.section}>
       <header className={styles.header}>
         <h2>Próximas ações</h2>
-        <p>Atalhos objetivos para tirar o painel do estado informativo e transformar em operação diária.</p>
+        <p>Atalhos objetivos para transformar o painel em rotina operacional.</p>
       </header>
 
       <div className={styles.grid}>

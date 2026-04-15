@@ -68,7 +68,7 @@ export function FieldSummaryList({ fields, isLoading }: FieldSummaryListProps) {
       <header className={styles.header}>
         <div>
           <h2>Talhões em acompanhamento</h2>
-          <p>Resumo dos últimos dados disponíveis por talhão.</p>
+          <p>Resumo dos últimos dados climáticos disponíveis por talhão.</p>
         </div>
         {hiddenCount > 0 && (
           <button
@@ -91,7 +91,7 @@ export function FieldSummaryList({ fields, isLoading }: FieldSummaryListProps) {
 
       {!isLoading && hiddenCount > 0 && (
         <p className={styles.moreHint}>
-          Mostrando os {visibleFields.length} maiores talhões. Existem mais {hiddenCount} em acompanhamento.
+          Mostrando os {visibleFields.length} maiores talhões. Existem mais {hiddenCount} áreas em acompanhamento.
         </p>
       )}
 

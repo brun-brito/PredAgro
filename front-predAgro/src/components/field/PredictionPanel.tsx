@@ -1,11 +1,14 @@
 import type { PlanRiskAssessment } from '../../types/domain';
+import { FaCircleInfo } from 'react-icons/fa6';
 import { LoadingState } from '../ui/LoadingState';
-import { formatNumber } from '../../utils/formatters';
+import { formatDate, formatNumber } from '../../utils/formatters';
 import styles from './PredictionPanel.module.css';
 
 interface PredictionPanelProps {
   assessment: PlanRiskAssessment | null;
   isLoading: boolean;
+  farmName?: string;
+  fieldName?: string;
 }
 
 const riskLabel = {
@@ -26,24 +29,32 @@ const confidenceLabel = {
   low: 'Baixa',
 };
 
-export function PredictionPanel({ assessment, isLoading }: PredictionPanelProps) {
+export function PredictionPanel({ assessment, isLoading, farmName, fieldName }: PredictionPanelProps) {
   const notes = assessment?.notes ?? [];
   const categories = assessment?.categories ?? [];
   const mode = assessment?.mode ?? 'forecast';
   const confidence = assessment?.confidence ?? 'high';
   const yieldForecast = assessment?.yieldForecast;
+  const cycleEstimate = assessment?.cycleEstimate;
+  const cycleInfo = cycleEstimate
+    ? `Data final estimada por soma térmica simplificada. Base térmica de ${cycleEstimate.baseTempC.toFixed(
+        0
+      )} °C, referência de ${cycleEstimate.referenceTempC.toFixed(
+        1
+      )} °C, alvo de ${cycleEstimate.targetDegreeDays.toFixed(0)} graus-dia e cobertura ${cycleEstimate.dataMode}.`
+    : 'A data final foi estimada a partir da soma térmica simplificada e da cobertura climática do período.';
 
   return (
     <article className={styles.card}>
       <header>
         <h2>Risco climático e produtividade</h2>
-        <p>Resultado baseado no plano de safra e nos dados climáticos disponíveis.</p>
+        <p>Resultado do modelo agroclimático com base no plano e nos dados climáticos disponíveis.</p>
       </header>
 
       {isLoading && <LoadingState label="Carregando análise..." size="sm" />}
 
       {!isLoading && !assessment && (
-        <p>Crie um plano de safra para gerar a análise de risco.</p>
+        <p>Crie um plano para gerar a análise de risco.</p>
       )}
 
       {!isLoading && assessment && (
@@ -58,10 +69,21 @@ export function PredictionPanel({ assessment, isLoading }: PredictionPanelProps)
           <div className={styles.section}>
             <h3>Resumo do plano</h3>
             <div className={styles.planSummary}>
+              {farmName && <span>Fazenda: {farmName}</span>}
+              {fieldName && <span>Talhão: {fieldName}</span>}
               <span>Cultura: {assessment.cropName}</span>
-              <span>
-                Período: {assessment.startDate} até {assessment.endDate}
+              <span className={styles.periodLine}>
+                <span>Período: {formatDate(assessment.startDate)} até {formatDate(assessment.endDate)}</span>
+                <button
+                  type="button"
+                  className={styles.infoButton}
+                  data-tooltip={cycleInfo}
+                  aria-label="Informações sobre o cálculo da data final"
+                >
+                  <FaCircleInfo />
+                </button>
               </span>
+              {cycleEstimate && <span>Ciclo projetado: {cycleEstimate.estimatedCycleDays} dias</span>}
               <span>Score geral: {assessment.score.toFixed(0)}</span>
               <span>Tipo de análise: {modeLabel[mode]}</span>
               <span>Confiabilidade: {confidenceLabel[confidence]}</span>

@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { WeatherSnapshot } from '../../types/domain';
 import { LoadingState } from '../ui/LoadingState';
-import { formatDateTime, formatNumber } from '../../utils/formatters';
+import { formatDate, formatDateTime, formatNumber } from '../../utils/formatters';
 import styles from './WeatherPanel.module.css';
 
 interface WeatherPanelProps {
   snapshot: WeatherSnapshot | null;
   isLoading: boolean;
 }
+
+const PANEL_TITLE = 'Base climática do talhão';
 
 export function WeatherPanel({ snapshot, isLoading }: WeatherPanelProps) {
   const [rangeStart, setRangeStart] = useState('');
@@ -66,7 +68,7 @@ export function WeatherPanel({ snapshot, isLoading }: WeatherPanelProps) {
   if (isLoading) {
     return (
       <article className={styles.card}>
-        <h2>Previsão climática</h2>
+        <h2>{PANEL_TITLE}</h2>
         <LoadingState label="Carregando previsão..." size="sm" />
       </article>
     );
@@ -75,7 +77,7 @@ export function WeatherPanel({ snapshot, isLoading }: WeatherPanelProps) {
   if (!snapshot && !isLoading) {
     return (
       <article className={styles.card}>
-        <h2>Previsão climática</h2>
+        <h2>{PANEL_TITLE}</h2>
         <p>Nenhum dado de previsão disponível para este talhão.</p>
       </article>
     );
@@ -84,8 +86,8 @@ export function WeatherPanel({ snapshot, isLoading }: WeatherPanelProps) {
   return (
     <article className={styles.card}>
       <header>
-        <h2>Previsão climática</h2>
-        <p>Fonte: {snapshot?.source ?? 'Open-Meteo'}</p>
+        <h2>{PANEL_TITLE}</h2>
+        <p>Fonte: {snapshot?.source ?? 'Open-Meteo'} · previsão diária dentro do período disponível</p>
       </header>
 
       <div className={styles.rangeControls}>
@@ -112,8 +114,7 @@ export function WeatherPanel({ snapshot, isLoading }: WeatherPanelProps) {
       </div>
       {availableDates.min && availableDates.max && (
         <p className={styles.rangeHint}>
-          Intervalo disponível: {new Date(availableDates.min).toLocaleDateString('pt-BR')} até{' '}
-          {new Date(availableDates.max).toLocaleDateString('pt-BR')}
+          Intervalo disponível: {formatDate(availableDates.min)} até {formatDate(availableDates.max)}
         </p>
       )}
       {isInvalidRange && <p className={styles.invalidRange}>A data final deve ser igual ou posterior à inicial.</p>}
@@ -121,7 +122,7 @@ export function WeatherPanel({ snapshot, isLoading }: WeatherPanelProps) {
       <div className={styles.list}>
         {filteredDays.map((day) => (
           <div key={day.date} className={styles.dayItem}>
-            <strong>{new Date(day.date).toLocaleDateString('pt-BR')}</strong>
+            <strong>{formatDate(day.date)}</strong>
             <span>
               {formatNumber(day.temperatureMin, 0)}°C / {formatNumber(day.temperatureMax, 0)}°C
             </span>

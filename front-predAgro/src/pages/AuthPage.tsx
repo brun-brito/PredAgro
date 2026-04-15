@@ -102,7 +102,7 @@ export function AuthPage() {
           <p className={styles.eyebrow}>PredAgro</p>
           <h1>{isLoginMode ? 'Acesse sua conta' : 'Crie sua conta'}</h1>
           <p>
-            Ambiente seguro para acompanhar clima, previsões e alertas agrícolas da sua propriedade.
+            Ambiente seguro para acompanhar clima, planejamento e alertas da operação atual em cada talhão.
           </p>
           <Link to="/" className={styles.backLink}>
             Voltar para página inicial

@@ -27,7 +27,7 @@ export function TotalsOverview({ totals, isLoading }: TotalsOverviewProps) {
     <article className={styles.card}>
       <header>
         <h2>Resumo geral</h2>
-        <p>Visão rápida da área acompanhada.</p>
+        <p>Visão rápida da área organizada e monitorada.</p>
       </header>
 
       <div className={styles.grid}>

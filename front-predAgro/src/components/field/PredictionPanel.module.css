@@ -75,6 +75,82 @@
   font-weight: 600;
 }
 
+.periodLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.infoButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--green-800);
+  cursor: help;
+  padding: 0;
+  line-height: 1;
+}
+
+.infoButton:hover {
+  color: var(--green-950);
+}
+
+.infoButton::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  z-index: 10;
+  min-width: 280px;
+  max-width: 360px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(20, 36, 28, 0.96);
+  color: var(--white);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  font-weight: 500;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 14px 30px rgba(12, 18, 14, 0.25);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.12s ease, visibility 0.12s ease, transform 0.12s ease;
+}
+
+.infoButton::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 2px);
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-bottom-color: rgba(20, 36, 28, 0.96);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.12s ease, visibility 0.12s ease;
+}
+
+.infoButton:hover::after,
+.infoButton:focus-visible::after,
+.infoButton:hover::before,
+.infoButton:focus-visible::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.infoButton:hover::after,
+.infoButton:focus-visible::after {
+  transform: translateX(-50%) translateY(0);
+}
+
 .yieldGrid {
   display: grid;
   gap: 6px;

@@ -68,12 +68,19 @@ export interface CropStageRule {
   durationShare: number;
   weight: number;
   thresholds: {
-    tempMinIdeal: number;
-    tempMaxIdeal: number;
-    tempMinCritical: number;
-    tempMaxCritical: number;
-    precipMinPerDay: number;
-    precipMaxPerDay: number;
+    tempAvgMinIdeal?: number;
+    tempAvgMaxIdeal?: number;
+    tempAvgMinCritical?: number;
+    tempAvgMaxCritical?: number;
+    tempMinIdeal?: number;
+    tempMaxIdeal?: number;
+    tempMinCritical?: number;
+    tempMaxCritical?: number;
+    precipMinTotal?: number;
+    precipMaxTotal?: number;
+    precipMinPerDay?: number;
+    precipMaxPerDay?: number;
+    rainyDaysMax?: number;
     windMax?: number;
     humidityMin?: number;
     humidityMax?: number;
@@ -87,6 +94,14 @@ export interface CropProfile {
   id: string;
   name: string;
   description: string;
+  cycleDays?: number;
+  cycleModel?: {
+    method: 'thermal-time';
+    baseTempC: number;
+    referenceTempC: number;
+    minCycleDays: number;
+    maxCycleDays: number;
+  };
   soil: {
     textures: SoilTexture[];
     drainage: DrainageLevel[];
@@ -110,10 +125,26 @@ export interface PlantingPlan {
   cropId: string;
   startDate: string;
   endDate: string;
+  cycleEstimate?: PlanCycleEstimate;
   areaHa: number;
   createdAt: string;
   updatedAt: string;
   riskCache?: PlanRiskCache;
+}
+
+export interface PlanCycleEstimate {
+  method: 'thermal-time';
+  startDate: string;
+  endDate: string;
+  estimatedCycleDays: number;
+  baseTempC: number;
+  referenceTempC: number;
+  targetDegreeDays: number;
+  dataMode: 'forecast' | 'mixed' | 'historical';
+  confidence: 'high' | 'medium' | 'low';
+  forecastDaysUsed: number;
+  historicalDaysUsed: number;
+  notes: string[];
 }
 
 export type RiskCategoryId =
@@ -139,8 +170,10 @@ export interface PlanRiskAssessment {
   fieldId: string;
   cropId: string;
   cropName: string;
+  assessmentVersion: string;
   startDate: string;
   endDate: string;
+  cycleEstimate?: PlanCycleEstimate;
   riskLevel: RiskLevel;
   score: number;
   categories: RiskCategoryResult[];

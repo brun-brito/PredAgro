@@ -22,9 +22,11 @@ export async function updateByUserId(
   const city = optionalString(payload.city) ?? 'Cidade não informada';
   const state = optionalString(payload.state) ?? 'Estado não informado';
 
-  const cropTypes = payload.cropTypes
-    ? requireStringList(payload.cropTypes, 'cropTypes')
-    : ['Soja'];
+  if (payload.cropTypes) {
+    requireStringList(payload.cropTypes, 'cropTypes');
+  }
+
+  const cropTypes = ['Milho 1ª safra'];
 
   const areaHectares = requireNumber(payload.areaHectares ?? 1, 'areaHectares', 0.1, 10000);
 

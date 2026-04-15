@@ -80,7 +80,7 @@ export function DashboardPage() {
           <div>
             <p className={styles.eyebrow}>Painel principal</p>
             <h1>Bem-vindo, {user?.name ?? 'Produtor'}</h1>
-            <p className={styles.subtitle}>Acompanhe fazendas, talhões e alertas climáticos.</p>
+            <p className={styles.subtitle}>Acompanhe fazendas, talhões e alertas climáticos em uma única visão.</p>
           </div>
 
           <div className={styles.headerActions}>

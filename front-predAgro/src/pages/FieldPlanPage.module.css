@@ -85,6 +85,32 @@
   color: var(--slate-700);
 }
 
+.fixedCropField {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid rgba(149, 168, 162, 0.5);
+  border-radius: var(--radius-sm);
+  background-color: rgba(223, 242, 232, 0.45);
+}
+
+.fixedCropField span {
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--green-800);
+}
+
+.fixedCropField strong {
+  color: var(--green-950);
+}
+
+.fixedCropField small {
+  color: var(--slate-600);
+  font-size: 0.9rem;
+}
+
 .planForm select,
 .planForm input {
   border: 1px solid rgba(149, 168, 162, 0.5);
@@ -95,6 +121,27 @@
 .helperText {
   color: var(--slate-600);
   font-weight: 600;
+}
+
+.estimateDetails {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(149, 168, 162, 0.4);
+  background-color: rgba(243, 248, 245, 0.85);
+  color: var(--slate-700);
+}
+
+.estimateDetails p {
+  margin: 0;
+}
+
+.estimateDetails ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
 }
 
 .planActions {

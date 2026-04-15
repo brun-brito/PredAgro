@@ -40,13 +40,13 @@ export function FieldWeatherPage() {
         setField(cachedField.field);
       }
 
-      if (cachedField && !cachedField.field.geometry) {
-        if (isMounted) {
-          setSnapshot(null);
-          setFeedback('Delimite o talhão para liberar a previsão climática.');
-          setIsLoading(false);
-        }
-        return;
+        if (cachedField && !cachedField.field.geometry) {
+          if (isMounted) {
+            setSnapshot(null);
+            setFeedback('Delimite o talhão para liberar a previsão climática usada no planejamento.');
+            setIsLoading(false);
+          }
+          return;
       }
 
       const cachedForecast = fieldService.getCachedForecast(token, farmIdValue, fieldIdValue);
@@ -73,7 +73,7 @@ export function FieldWeatherPage() {
           if (!fieldResponse.field.geometry) {
             if (isMounted) {
               setSnapshot(null);
-              setFeedback('Delimite o talhão para liberar a previsão climática.');
+              setFeedback('Delimite o talhão para liberar a previsão climática usada no planejamento.');
               setIsLoading(false);
             }
             return;
@@ -137,7 +137,7 @@ export function FieldWeatherPage() {
           <div>
             <p className={styles.eyebrow}>Previsão climática</p>
             <h1>{field?.name ?? 'Talhão selecionado'}</h1>
-            <p className={styles.subtitle}>Acompanhe a previsão diária dentro do período disponível.</p>
+            <p className={styles.subtitle}>Acompanhe a previsão diária usada no planejamento do talhão.</p>
           </div>
           <div className={styles.headerActions}>
             <button
@@ -168,7 +168,7 @@ export function FieldWeatherPage() {
             {!snapshot && (
               <div className={styles.card}>
                 <h2>Próximos passos</h2>
-                <p>Delimite o talhão para liberar a previsão diária e as análises de risco.</p>
+                <p>Delimite o talhão para liberar a previsão diária e a análise operacional.</p>
                 <Link
                   to={`/fazendas/${farmIdValue}/talhoes/${fieldIdValue}/delimitacao`}
                   className={styles.primaryButton}

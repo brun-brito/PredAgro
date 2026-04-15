@@ -112,7 +112,7 @@ export function FieldOverviewPage() {
           <div>
             <p className={styles.eyebrow}>Talhão</p>
             <h1>{field?.name ?? 'Talhão selecionado'}</h1>
-            <p className={styles.subtitle}>Resumo e atalhos para previsão, delimitação e planejamento.</p>
+            <p className={styles.subtitle}>Resumo e atalhos para previsão, delimitação e planejamento do talhão.</p>
           </div>
           <div className={styles.headerActions}>
             <Link to={`/fazendas/${farmIdValue}`} className={styles.outlineButton}>
@@ -163,7 +163,7 @@ export function FieldOverviewPage() {
                   </div>
                 </div>
                 {!hasGeometry && (
-                  <p className={styles.warning}>Delimite o talhão para liberar previsão e análise de risco.</p>
+                  <p className={styles.warning}>Delimite o talhão para liberar previsão e análise climática.</p>
                 )}
               </div>
 
@@ -174,13 +174,13 @@ export function FieldOverviewPage() {
                     to={`/fazendas/${farmIdValue}/talhoes/${fieldIdValue}/planejamento`}
                     className={styles.primaryButton}
                   >
-                    Planejar safra
+                    Abrir planejamento
                   </Link>
                   <Link
                     to={`/fazendas/${farmIdValue}/talhoes/${fieldIdValue}/previsao`}
                     className={styles.outlineButton}
                   >
-                    Ver previsão climática
+                    Ver base climática
                   </Link>
                   <Link
                     to={`/fazendas/${farmIdValue}/talhoes/${fieldIdValue}/delimitacao`}
@@ -205,7 +205,7 @@ export function FieldOverviewPage() {
                 <div>
                   <h2>Delimitação do talhão</h2>
                   <p className={styles.sectionSubtitle}>
-                    Visualize o contorno cadastrado e revise rapidamente se a área desenhada corresponde ao talhão.
+                    Visualize o contorno cadastrado e revise rapidamente se a área desenhada corresponde ao talhão monitorado.
                   </p>
                 </div>
                 <Link
@@ -231,7 +231,7 @@ export function FieldOverviewPage() {
               ) : (
                 <div className={styles.mapEmptyState}>
                   <p>A delimitação ainda não foi cadastrada.</p>
-                  <p>Sem o polígono salvo, a plataforma não consegue gerar previsão e análise com contexto espacial do talhão.</p>
+                  <p>Sem o polígono salvo, a plataforma não consegue gerar previsão e análise espacial para esta etapa do sistema.</p>
                 </div>
               )}
             </section>

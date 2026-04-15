@@ -129,6 +129,14 @@ export interface CropProfile {
   id: string;
   name: string;
   description: string;
+  cycleDays?: number;
+  cycleModel?: {
+    method: 'thermal-time';
+    baseTempC: number;
+    referenceTempC: number;
+    minCycleDays: number;
+    maxCycleDays: number;
+  };
   stages: CropStageRule[];
   yieldModel?: {
     baselineYield: number;
@@ -146,9 +154,25 @@ export interface PlantingPlan {
   cropId: string;
   startDate: string;
   endDate: string;
+  cycleEstimate?: PlanCycleEstimate;
   areaHa: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PlanCycleEstimate {
+  method: 'thermal-time';
+  startDate: string;
+  endDate: string;
+  estimatedCycleDays: number;
+  baseTempC: number;
+  referenceTempC: number;
+  targetDegreeDays: number;
+  dataMode: 'forecast' | 'mixed' | 'historical';
+  confidence: 'high' | 'medium' | 'low';
+  forecastDaysUsed: number;
+  historicalDaysUsed: number;
+  notes: string[];
 }
 
 export type RiskCategoryId =
@@ -176,6 +200,7 @@ export interface PlanRiskAssessment {
   cropName: string;
   startDate: string;
   endDate: string;
+  cycleEstimate?: PlanCycleEstimate;
   riskLevel: RiskLevel;
   score: number;
   categories: RiskCategoryResult[];

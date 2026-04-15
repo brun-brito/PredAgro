@@ -14,35 +14,35 @@ interface ShowcaseItem {
 
 const highlights = [
   {
-    title: 'Clima monitorado em tempo real',
+    title: 'Monitoramento climático',
     description:
-      'Concentre dados de chuva, temperatura, umidade e vento em um painel único para orientar o manejo diário.',
+      'Reúna chuva, temperatura e vento em um painel objetivo para revisar a janela operacional de cada área monitorada.',
     icon: FaCloudSunRain,
   },
   {
-    title: 'Base de dados agrometeorológica',
+    title: 'Base territorial e histórico climático',
     description:
-      'Organize históricos climáticos e indicadores da propriedade para apoiar análises futuras de produtividade.',
+      'Cadastre fazendas, delimite talhões e preserve o histórico climático necessário para comparar períodos de plantio.',
     icon: FaDatabase,
   },
   {
-    title: 'Predição de safras orientada a IA',
+    title: 'Análise da safra atual',
     description:
-      'A estrutura da plataforma prepara seu negócio para previsões de rendimento mais consistentes a cada ciclo.',
+      'A análise combina previsão, tendência histórica e produtividade estimada para apoiar o planejamento do milho.',
     icon: FaSeedling,
   },
 ];
 
 const flowSteps = [
-  'Cadastre sua(s) propriedade(s) e cultura(s) prioritária(s).',
-  'Acompanhe os indicadores climáticos e os alertas operacionais.',
-  'Use as previsões para ajustar o planejamento da safra.',
+  'Cadastre propriedades e talhões;',
+  'Delimite a área real de cada talhão e acompanhe clima, alertas e atualizações;',
+  'Monte o plano do ciclo para revisar risco, período e produtividade estimada.',
 ];
 
 const dashboardSignals = [
   'Resumo geral das áreas acompanhadas',
-  'Atalhos para fazendas, clima e análises',
-  'Alertas e acompanhamento operacional',
+  'Atalhos para clima, talhões e planejamento do milho',
+  'Alertas operacionais e próximos passos',
 ];
 
 const panelHighlights = [
@@ -59,7 +59,7 @@ const panelHighlights = [
   {
     title: 'Fluxo contínuo de trabalho',
     description:
-      'O painel conecta cadastro, delimitação, previsão climática e planejamento sem exigir navegação complexa.',
+      'O painel conecta cadastro, delimitação, clima e planejamento sem exigir navegação complexa.',
   },
   {
     title: 'Leitura objetiva para agir',
@@ -98,7 +98,7 @@ const showcases: ShowcaseItem[] = [
     label: 'Análise',
     title: 'Planejamento com leitura direta de risco e produtividade',
     description:
-      'As análises mostram nível de risco, fatores de impacto e estimativas de produtividade em um formato simples para apoiar a decisão de safra.',
+      'As análises mostram nível de risco, fatores de impacto e estimativas de produtividade para cada plano cadastrado.',
     image: '/assets/images/6-previsao.png',
     alt: 'Tela de planejamento com risco climático e produtividade estimada.',
   },
@@ -112,11 +112,10 @@ export function HomePage() {
       <main className={styles.main}>
         <section className={styles.hero}>
           <div className={styles.heroContent}>
-            <p className={styles.eyebrow}>Planejamento agrícola com foco em decisão</p>
-            <h1 className={styles.title}>PredAgro: dados climáticos e análise agroclimática para pequenas e médias propriedades</h1>
+            <h1 className={styles.title}>PredAgro: monitoramento e planejamento do milho 1ª safra</h1>
             <p className={styles.description}>
-              Plataforma web para apoiar agricultores no planejamento de safra com informações objetivas,
-              histórico de dados e evolução gradual para modelos de inteligência artificial.
+              Sistema criado para organizar fazendas, delimitar talhões e analisar clima, janela de plantio
+              e produtividade estimada do milho 1ª safra.
             </p>
             <div className={styles.actions}>
               <Link to="/entrar" className={styles.primaryAction}>
@@ -207,8 +206,8 @@ export function HomePage() {
 
         <section id="funcionalidades" className={styles.section}>
           <div className={styles.sectionHeader}>
-            <h2>Funcionalidades iniciais</h2>
-            <p>Primeira entrega focada em clareza de dados e base técnica para evolução.</p>
+            <h2>Funcionalidades</h2>
+            <p>Fluxos organizados para cadastro, monitoramento climático e planejamento do milho.</p>
           </div>
 
           <div className={styles.cardGrid}>
@@ -231,7 +230,7 @@ export function HomePage() {
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <h2>Fluxo de uso</h2>
-            <p>Experiência simples para diferentes níveis de familiaridade digital.</p>
+            <p>Sequência direta para estruturar o talhão e revisar a janela de plantio.</p>
           </div>
 
           <ol className={styles.flowList}>

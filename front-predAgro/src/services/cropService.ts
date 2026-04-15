@@ -2,7 +2,7 @@ import { apiClient } from './httpClient';
 import { getCache, setCache } from '../utils/cache';
 import type { CropProfile } from '../types/domain';
 
-const cropListKey = (token: string) => `crops:list:${token}`;
+const cropListKey = (token: string) => `crops:v2:list:${token}`;
 
 export const cropService = {
   getCachedList: (token: string) => getCache<{ crops: CropProfile[] }>(cropListKey(token)),
