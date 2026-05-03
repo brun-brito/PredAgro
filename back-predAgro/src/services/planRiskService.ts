@@ -60,6 +60,18 @@ function average(values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
+function computeAttentionScore(value: number, start: number, end: number, maxScore = 25) {
+  if (value <= start) return maxScore;
+  if (value >= end) return 0;
+  return ((end - value) / Math.max(end - start, 0.0001)) * maxScore;
+}
+
+function computeAttentionScoreFromRatio(ratio: number, startRatio: number, maxScore = 25) {
+  if (ratio < startRatio) return 0;
+  if (ratio >= 1) return maxScore;
+  return ((ratio - startRatio) / Math.max(1 - startRatio, 0.0001)) * maxScore;
+}
+
 function standardDeviation(values: number[]) {
   if (values.length === 0) return 0;
   const avg = average(values);
@@ -203,6 +215,7 @@ function buildCategory(
   score: number,
   acceptableRange: string | undefined,
   observedRange: string | undefined,
+  rangeInterpretation: string | undefined,
   reasons: string[],
   recommendations: string[]
 ): RiskCategoryResult {
@@ -213,6 +226,7 @@ function buildCategory(
     level: levelFromScore(score),
     acceptableRange,
     observedRange,
+    rangeInterpretation,
     reasons,
     recommendations,
   };
@@ -328,13 +342,20 @@ function evaluateWaterStress(
   let score = 0;
   const reasons: string[] = [];
   const recommendations: string[] = [];
+  let rangeInterpretation = 'Dentro da faixa aceitável, com margem confortável.';
 
   if (metrics.precipTotal < minPrecip) {
     score = ((minPrecip - metrics.precipTotal) / minPrecip) * 100;
+    rangeInterpretation = 'Fora da faixa aceitável.';
     reasons.push(
       'Chuva acumulada abaixo da necessidade hídrica ajustada à fase do milho e à temperatura média observada.'
     );
     recommendations.push('Reavalie a janela de semeadura e acompanhe a umidade do solo durante a fase crítica.');
+  } else if (metrics.precipTotal < minPrecip * 1.15) {
+    score = computeAttentionScore(metrics.precipTotal, minPrecip, minPrecip * 1.15, 25);
+    rangeInterpretation = 'Dentro da faixa aceitável, mas próximo do limite técnico.';
+    reasons.push('A chuva ficou próxima do mínimo recomendado para a fase.');
+    recommendations.push('Monitore a umidade do solo, pois a fase está com pouca margem hídrica.');
   }
 
   return buildCategory(
@@ -343,6 +364,7 @@ function evaluateWaterStress(
     clamp(score),
     acceptableRange,
     observedRange,
+    rangeInterpretation,
     reasons,
     recommendations
   );
@@ -363,13 +385,26 @@ function evaluateWaterExcess(stage: CropStageRule, metrics: StageMetrics): RiskC
   let score = 0;
   const reasons: string[] = [];
   const recommendations: string[] = [];
+  let rangeInterpretation = 'Dentro da faixa aceitável, com margem confortável.';
 
   if (rainyDays > rainyDaysMax && finalWindowPrecipTotal >= HARVEST_WINDOW_MIN_TOTAL_RAIN_MM) {
     score = ((rainyDays - rainyDaysMax) / Math.max(10 - rainyDaysMax, 1)) * 100;
+    rangeInterpretation = 'Fora da faixa aceitável.';
     reasons.push(
       'O decêndio final concentra dias de chuva operacionalmente relevantes acima do limite usado para a colheita.'
     );
     recommendations.push('Revise a janela de colheita e evite operações com chuva persistente no talhão.');
+  } else {
+    const rainyDayRatio = rainyDaysMax > 0 ? rainyDays / rainyDaysMax : 0;
+    const rainRatio = finalWindowPrecipTotal / HARVEST_WINDOW_MIN_TOTAL_RAIN_MM;
+    const maxRatio = Math.max(rainyDayRatio, rainRatio);
+
+    if (maxRatio >= 0.8) {
+      score = computeAttentionScoreFromRatio(maxRatio, 0.8, 25);
+      rangeInterpretation = 'Dentro da faixa aceitável, mas próximo do limite técnico.';
+      reasons.push('O decêndio final ficou próximo do critério de excesso de chuva usado para colheita.');
+      recommendations.push('Acompanhe a previsão próxima da colheita para evitar operações com pouca janela seca.');
+    }
   }
 
   return buildCategory(
@@ -378,6 +413,7 @@ function evaluateWaterExcess(stage: CropStageRule, metrics: StageMetrics): RiskC
     clamp(score),
     acceptableRange,
     observedRange,
+    rangeInterpretation,
     reasons,
     recommendations
   );
@@ -401,6 +437,7 @@ function evaluateHeat(stage: CropStageRule, metrics: StageMetrics): RiskCategory
   let score = 0;
   const reasons: string[] = [];
   const recommendations: string[] = [];
+  let rangeInterpretation = 'Dentro da faixa aceitável, com margem confortável.';
 
   if (metrics.tempAvg > tempAvgMaxIdeal) {
     if (tempAvgMaxCritical !== undefined && metrics.tempAvg <= tempAvgMaxCritical) {
@@ -408,16 +445,46 @@ function evaluateHeat(stage: CropStageRule, metrics: StageMetrics): RiskCategory
     } else {
       score = 80;
     }
+    rangeInterpretation = 'Fora da faixa aceitável.';
     reasons.push('A faixa térmica da fase reprodutiva ficou acima do limite indicado para o milho.');
   }
 
   if (tempMaxCritical !== undefined && metrics.tempMax > tempMaxCritical) {
     score = Math.max(score, 85 + (metrics.tempMax - tempMaxCritical) * 3);
+    rangeInterpretation = 'Fora da faixa aceitável.';
     reasons.push('Picos de calor podem comprometer a polinização e o enchimento de grãos.');
   }
 
+  if (score === 0) {
+    const attentionScores: number[] = [];
+
+    if (tempAvgMaxCritical !== undefined) {
+      const attentionStartAvg = tempAvgMaxIdeal - Math.max((tempAvgMaxCritical - tempAvgMaxIdeal) * 0.25, 1);
+      if (metrics.tempAvg >= attentionStartAvg && metrics.tempAvg <= tempAvgMaxIdeal) {
+        attentionScores.push(computeAttentionScore(metrics.tempAvg, attentionStartAvg, tempAvgMaxIdeal, 25));
+      }
+    }
+
+    if (tempMaxCritical !== undefined) {
+      const attentionStartMax = tempMaxCritical - 2;
+      if (metrics.tempMax >= attentionStartMax && metrics.tempMax <= tempMaxCritical) {
+        attentionScores.push(computeAttentionScore(metrics.tempMax, attentionStartMax, tempMaxCritical, 25));
+      }
+    }
+
+    score = attentionScores.length > 0 ? Math.max(...attentionScores) : 0;
+
+    if (score > 0) {
+      rangeInterpretation = 'Dentro da faixa aceitável, mas próximo do limite técnico.';
+      reasons.push('O pico térmico ficou próximo do limite crítico da fase reprodutiva.');
+      recommendations.push('Monitore a evolução térmica da fase reprodutiva para evitar exposição adicional ao calor.');
+    }
+  }
+
   if (score > 0) {
-    recommendations.push('Reveja a data de semeadura para reduzir exposição do florescimento ao calor.');
+    if (rangeInterpretation === 'Fora da faixa aceitável.') {
+      recommendations.push('Reveja a data de semeadura para reduzir exposição do florescimento ao calor.');
+    }
   }
 
   return buildCategory(
@@ -426,6 +493,7 @@ function evaluateHeat(stage: CropStageRule, metrics: StageMetrics): RiskCategory
     clamp(score),
     acceptableRange,
     observedRange,
+    rangeInterpretation,
     reasons,
     recommendations
   );
@@ -443,6 +511,7 @@ function evaluateCold(stage: CropStageRule, metrics: StageMetrics): RiskCategory
   let score = 0;
   const reasons: string[] = [];
   const recommendations: string[] = [];
+  let rangeInterpretation = 'Dentro da faixa aceitável, com margem confortável.';
 
   if (tempAvgMinIdeal !== undefined && metrics.tempAvg < tempAvgMinIdeal) {
     if (tempAvgMinCritical !== undefined && metrics.tempAvg >= tempAvgMinCritical) {
@@ -450,6 +519,7 @@ function evaluateCold(stage: CropStageRule, metrics: StageMetrics): RiskCategory
     } else {
       score = 75;
     }
+    rangeInterpretation = 'Fora da faixa aceitável.';
     reasons.push('A temperatura média do período ficou abaixo do patamar térmico indicado para o milho.');
   }
 
@@ -459,10 +529,33 @@ function evaluateCold(stage: CropStageRule, metrics: StageMetrics): RiskCategory
     } else {
       score = Math.max(score, 90);
     }
+    rangeInterpretation = 'Fora da faixa aceitável.';
     reasons.push('Temperaturas mínimas elevam o risco térmico do ciclo e aproximam a lavoura de condição de geada.');
   }
 
-  if (score > 0) {
+  if (score === 0) {
+    const attentionScores: number[] = [];
+
+    if (tempAvgMinIdeal !== undefined && metrics.tempAvg > tempAvgMinIdeal && metrics.tempAvg <= tempAvgMinIdeal + 1.5) {
+      const attentionEndAvg = tempAvgMinIdeal + 1.5;
+      attentionScores.push(((attentionEndAvg - metrics.tempAvg) / 1.5) * 20);
+    }
+
+    if (tempMinIdeal !== undefined && metrics.tempMinAvg > tempMinIdeal && metrics.tempMinAvg <= tempMinIdeal + 1.5) {
+      const attentionEndMin = tempMinIdeal + 1.5;
+      attentionScores.push(((attentionEndMin - metrics.tempMinAvg) / 1.5) * 25);
+    }
+
+    score = attentionScores.length > 0 ? Math.max(...attentionScores) : 0;
+
+    if (score > 0) {
+      rangeInterpretation = 'Dentro da faixa aceitável, mas próximo do limite técnico.';
+      reasons.push('A temperatura ficou próxima do limite mínimo recomendado para a fase.');
+      recommendations.push('Monitore a evolução térmica do ciclo para evitar avanço em período mais frio.');
+    }
+  }
+
+  if (score > 0 && rangeInterpretation === 'Fora da faixa aceitável.') {
     recommendations.push('Reavalie a janela de semeadura para afastar o ciclo de períodos frios.');
   }
 
@@ -472,6 +565,7 @@ function evaluateCold(stage: CropStageRule, metrics: StageMetrics): RiskCategory
     clamp(score),
     acceptableRange,
     observedRange,
+    rangeInterpretation,
     reasons,
     recommendations
   );

@@ -33,6 +33,7 @@ function buildCategoryRangeInfo(category: PlanRiskAssessment['categories'][numbe
   const parts = [
     category.acceptableRange ? `Faixa aceitável:\n${category.acceptableRange}` : null,
     category.observedRange ? `Valor obtido:\n${category.observedRange}` : null,
+    category.rangeInterpretation ?? null,
   ].filter(Boolean);
 
   return parts.length > 0 ? parts.join('\n\n') : 'A análise não trouxe detalhes adicionais de faixa para esta categoria.';
