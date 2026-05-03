@@ -58,7 +58,7 @@ async function fetchArchiveRange(lat: number, lon: number, startDate: string, en
     const response = await fetch(`${ARCHIVE_BASE_URL}?${params.toString()}`, { signal });
 
     if (!response.ok) {
-      throw new AppError('Falha ao consultar histórico climático.', 502);
+      throw new AppError('Falha ao consultar histórico climático. Tente novamente.', 502);
     }
 
     const data = (await response.json()) as ArchiveResponse;
@@ -78,7 +78,7 @@ async function fetchArchiveRange(lat: number, lon: number, startDate: string, en
     if (error instanceof AppError) {
       throw error;
     }
-    throw new AppError('Falha ao consultar histórico climático.', 502);
+    throw new AppError('Falha ao consultar histórico climático. Tente novamente.', 502);
   } finally {
     cancel();
   }

@@ -180,7 +180,7 @@ export function FieldOverviewPage() {
                     to={`/fazendas/${farmIdValue}/talhoes/${fieldIdValue}/previsao`}
                     className={styles.outlineButton}
                   >
-                    Ver base climática
+                    Ver previsão do tempo
                   </Link>
                   <Link
                     to={`/fazendas/${farmIdValue}/talhoes/${fieldIdValue}/delimitacao`}

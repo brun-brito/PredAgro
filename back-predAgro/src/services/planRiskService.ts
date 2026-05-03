@@ -201,6 +201,8 @@ function buildCategory(
   id: RiskCategoryId,
   label: string,
   score: number,
+  acceptableRange: string | undefined,
+  observedRange: string | undefined,
   reasons: string[],
   recommendations: string[]
 ): RiskCategoryResult {
@@ -209,6 +211,8 @@ function buildCategory(
     label,
     score: Number(score.toFixed(1)),
     level: levelFromScore(score),
+    acceptableRange,
+    observedRange,
     reasons,
     recommendations,
   };
@@ -274,7 +278,7 @@ function computeYieldForecast({
 
   const notes = [
     'Estimativa calculada por modelo agroclimático parametrizado para milho 1ª safra.',
-    'Base de produtividade ajustada pela série histórica da Conab para milho 1ª safra.',
+    'Base de produtividade ajustada pela série histórica da Conab para a cultura.',
     `Média térmica do período: ${tempAvg.toFixed(1)}°C; precipitação média diária: ${precipAvg.toFixed(1)} mm.`,
     mode === 'forecast'
       ? 'Baseada em previsão meteorológica de curto prazo.'
@@ -318,6 +322,8 @@ function evaluateWaterStress(
   );
   const adjustedPrecipMinPerDay = precipMinPerDay * thermalDemandFactor;
   const minPrecip = adjustedPrecipMinPerDay * metrics.days.length;
+  const acceptableRange = `Chuva acumulada: mínimo de ${minPrecip.toFixed(1)} mm`;
+  const observedRange = `Chuva acumulada: ${metrics.precipTotal.toFixed(1)} mm`;
 
   let score = 0;
   const reasons: string[] = [];
@@ -331,7 +337,15 @@ function evaluateWaterStress(
     recommendations.push('Reavalie a janela de semeadura e acompanhe a umidade do solo durante a fase crítica.');
   }
 
-  return buildCategory('water_stress', 'Estresse hídrico', clamp(score), reasons, recommendations);
+  return buildCategory(
+    'water_stress',
+    'Estresse hídrico',
+    clamp(score),
+    acceptableRange,
+    observedRange,
+    reasons,
+    recommendations
+  );
 }
 
 function evaluateWaterExcess(stage: CropStageRule, metrics: StageMetrics): RiskCategoryResult | null {
@@ -344,6 +358,8 @@ function evaluateWaterExcess(stage: CropStageRule, metrics: StageMetrics): RiskC
   const finalWindow = metrics.days.slice(-Math.min(metrics.days.length, 10));
   const rainyDays = finalWindow.filter((day) => day.precipitationSum >= RAINY_DAY_THRESHOLD_MM).length;
   const finalWindowPrecipTotal = finalWindow.reduce((sum, day) => sum + day.precipitationSum, 0);
+  const acceptableRange = `Dias com chuva >= ${RAINY_DAY_THRESHOLD_MM} mm: de 0 a ${rainyDaysMax} e \nAcumulado no decêndio final: de 0 a ${(HARVEST_WINDOW_MIN_TOTAL_RAIN_MM - 0.1).toFixed(1)} mm`;
+  const observedRange = `Dias com chuva >= ${RAINY_DAY_THRESHOLD_MM} mm: ${rainyDays}\nAcumulado no decêndio final: ${finalWindowPrecipTotal.toFixed(1)} mm`;
   let score = 0;
   const reasons: string[] = [];
   const recommendations: string[] = [];
@@ -356,7 +372,15 @@ function evaluateWaterExcess(stage: CropStageRule, metrics: StageMetrics): RiskC
     recommendations.push('Revise a janela de colheita e evite operações com chuva persistente no talhão.');
   }
 
-  return buildCategory('water_excess', 'Excesso de chuva na colheita', clamp(score), reasons, recommendations);
+  return buildCategory(
+    'water_excess',
+    'Excesso de chuva na colheita',
+    clamp(score),
+    acceptableRange,
+    observedRange,
+    reasons,
+    recommendations
+  );
 }
 
 function evaluateHeat(stage: CropStageRule, metrics: StageMetrics): RiskCategoryResult | null {
@@ -365,6 +389,14 @@ function evaluateHeat(stage: CropStageRule, metrics: StageMetrics): RiskCategory
   if (tempAvgMaxIdeal === undefined) {
     return null;
   }
+
+  const acceptableRange = [
+    tempAvgMaxIdeal !== undefined ? `Temperatura média: até ${tempAvgMaxIdeal.toFixed(1)} °C` : null,
+    tempMaxCritical !== undefined ? `Pico máximo: até ${tempMaxCritical.toFixed(1)} °C` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+  const observedRange = `Temperatura média: ${metrics.tempAvg.toFixed(1)} °C\nPico máximo: ${metrics.tempMax.toFixed(1)} °C`;
 
   let score = 0;
   const reasons: string[] = [];
@@ -388,11 +420,26 @@ function evaluateHeat(stage: CropStageRule, metrics: StageMetrics): RiskCategory
     recommendations.push('Reveja a data de semeadura para reduzir exposição do florescimento ao calor.');
   }
 
-  return buildCategory('heat_stress', 'Calor na fase reprodutiva', clamp(score), reasons, recommendations);
+  return buildCategory(
+    'heat_stress',
+    'Calor na fase reprodutiva',
+    clamp(score),
+    acceptableRange,
+    observedRange,
+    reasons,
+    recommendations
+  );
 }
 
 function evaluateCold(stage: CropStageRule, metrics: StageMetrics): RiskCategoryResult {
   const { tempAvgMinIdeal, tempAvgMinCritical, tempMinIdeal, tempMinCritical } = stage.thresholds;
+  const acceptableRange = [
+    tempAvgMinIdeal !== undefined ? `Temperatura média: acima de ${tempAvgMinIdeal.toFixed(1)} °C` : null,
+    tempMinIdeal !== undefined ? `Temperatura mínima média: acima de ${tempMinIdeal.toFixed(1)} °C` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+  const observedRange = `Temperatura média: ${metrics.tempAvg.toFixed(1)} °C\nTemperatura mínima média: ${metrics.tempMinAvg.toFixed(1)} °C`;
   let score = 0;
   const reasons: string[] = [];
   const recommendations: string[] = [];
@@ -419,7 +466,15 @@ function evaluateCold(stage: CropStageRule, metrics: StageMetrics): RiskCategory
     recommendations.push('Reavalie a janela de semeadura para afastar o ciclo de períodos frios.');
   }
 
-  return buildCategory('cold_stress', 'Frio e geada', clamp(score), reasons, recommendations);
+  return buildCategory(
+    'cold_stress',
+    'Frio e geada',
+    clamp(score),
+    acceptableRange,
+    observedRange,
+    reasons,
+    recommendations
+  );
 }
 
 function aggregateStageScore(stage: StageEvaluation) {
@@ -579,7 +634,10 @@ function buildPlanDates(start: Date, totalDays: number) {
 }
 
 function formatDate(date: Date) {
-  return date.toISOString().slice(0, 10);
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const year = date.getUTCFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 function addDays(date: Date, days: number) {

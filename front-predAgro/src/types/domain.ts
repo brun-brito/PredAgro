@@ -189,6 +189,8 @@ export interface RiskCategoryResult {
   label: string;
   score: number;
   level: RiskLevel;
+  acceptableRange?: string;
+  observedRange?: string;
   reasons: string[];
   recommendations: string[];
 }

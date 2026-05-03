@@ -9,7 +9,7 @@ interface WeatherPanelProps {
   isLoading: boolean;
 }
 
-const PANEL_TITLE = 'Base climática do talhão';
+const PANEL_TITLE = 'Previsão do tempo no talhão';
 
 export function WeatherPanel({ snapshot, isLoading }: WeatherPanelProps) {
   const [rangeStart, setRangeStart] = useState('');

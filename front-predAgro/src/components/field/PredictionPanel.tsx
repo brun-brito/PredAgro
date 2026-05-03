@@ -29,6 +29,15 @@ const confidenceLabel = {
   low: 'Baixa',
 };
 
+function buildCategoryRangeInfo(category: PlanRiskAssessment['categories'][number]) {
+  const parts = [
+    category.acceptableRange ? `Faixa aceitável:\n${category.acceptableRange}` : null,
+    category.observedRange ? `Valor obtido:\n${category.observedRange}` : null,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join('\n\n') : 'A análise não trouxe detalhes adicionais de faixa para esta categoria.';
+}
+
 export function PredictionPanel({ assessment, isLoading, farmName, fieldName }: PredictionPanelProps) {
   const notes = assessment?.notes ?? [];
   const categories = assessment?.categories ?? [];
@@ -36,6 +45,16 @@ export function PredictionPanel({ assessment, isLoading, farmName, fieldName }: 
   const confidence = assessment?.confidence ?? 'high';
   const yieldForecast = assessment?.yieldForecast;
   const cycleEstimate = assessment?.cycleEstimate;
+  const dominantCategories = [...categories]
+    .filter((category) => category.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2)
+    .map((category) => `${category.label.toLowerCase()} (${category.score.toFixed(0)})`);
+  const dominantFactors = (yieldForecast?.factors ?? [])
+    .filter((factor) => factor.impact > 0)
+    .sort((a, b) => b.impact - a.impact)
+    .slice(0, 2)
+    .map((factor) => `${factor.label.toLowerCase()} (${formatNumber(factor.impact, 1)}%)`);
   const cycleInfo = cycleEstimate
     ? `Data final estimada por soma térmica simplificada. Base térmica de ${cycleEstimate.baseTempC.toFixed(
         0
@@ -43,6 +62,44 @@ export function PredictionPanel({ assessment, isLoading, farmName, fieldName }: 
         1
       )} °C, alvo de ${cycleEstimate.targetDegreeDays.toFixed(0)} graus-dia e cobertura ${cycleEstimate.dataMode}.`
     : 'A data final foi estimada a partir da soma térmica simplificada e da cobertura climática do período.';
+  const assessmentConfidenceInfo = (() => {
+    const modeExplanation = {
+      forecast: 'Confiabilidade alta quando o período está coberto por previsão meteorológica direta.',
+      mixed:
+        'Confiabilidade média porque a análise combina previsão direta com climatologia histórica para completar o período.',
+      historical:
+        'Confiabilidade baixa porque a análise depende inteiramente de climatologia histórica, sem previsão diária para o ciclo.',
+    } satisfies Record<typeof mode, string>;
+
+    const coverageNote = cycleEstimate
+      ? `Cobertura usada no ciclo: ${cycleEstimate.forecastDaysUsed} dia(s) de previsão e ${cycleEstimate.historicalDaysUsed} dia(s) de histórico.`
+      : '';
+    const categoriesNote =
+      dominantCategories.length > 0
+        ? `Os fatores que mais pesaram no resultado foram ${dominantCategories.join(' e ')}.`
+        : 'Não houve categoria de risco dominante relevante no resultado.';
+
+    return [modeExplanation[mode], coverageNote, categoriesNote].filter(Boolean).join(' ');
+  })();
+  const yieldConfidenceInfo = (() => {
+    const confidenceExplanation = {
+      high:
+        'Confiança alta porque a produtividade foi calculada com base em previsão direta no período analisado.',
+      medium:
+        'Confiança média porque a produtividade combina previsão direta com climatologia histórica no ciclo projetado.',
+      low:
+        'Confiança baixa porque a produtividade depende principalmente de climatologia histórica, com menor precisão dia a dia.',
+    } satisfies Record<NonNullable<typeof yieldForecast>['confidence'], string>;
+
+    const factorsNote =
+      dominantFactors.length > 0
+        ? `Os impactos dominantes na produtividade foram ${dominantFactors.join(' e ')}.`
+        : 'Não houve fator de impacto dominante relevante na produtividade estimada.';
+
+    return yieldForecast
+      ? [confidenceExplanation[yieldForecast.confidence], factorsNote].join(' ')
+      : '';
+  })();
 
   return (
     <article className={styles.card}>
@@ -86,7 +143,17 @@ export function PredictionPanel({ assessment, isLoading, farmName, fieldName }: 
               {cycleEstimate && <span>Ciclo projetado: {cycleEstimate.estimatedCycleDays} dias</span>}
               <span>Score geral: {assessment.score.toFixed(0)}</span>
               <span>Tipo de análise: {modeLabel[mode]}</span>
-              <span>Confiabilidade: {confidenceLabel[confidence]}</span>
+              <span className={styles.periodLine}>
+                <span>Confiabilidade: {confidenceLabel[confidence]}</span>
+                <button
+                  type="button"
+                  className={styles.infoButton}
+                  data-tooltip={assessmentConfidenceInfo}
+                  aria-label="Informações sobre a confiabilidade da análise"
+                >
+                  <FaCircleInfo />
+                </button>
+              </span>
             </div>
           </div>
 
@@ -94,7 +161,6 @@ export function PredictionPanel({ assessment, isLoading, farmName, fieldName }: 
             <div className={styles.section}>
               <h3>Previsão de produtividade</h3>
               <div className={styles.yieldGrid}>
-                <span>Modelo: {yieldForecast.model}</span>
                 <span>Base: {formatNumber(yieldForecast.baselineYield, 2)} {yieldForecast.unit}</span>
                 <span>
                   Estimada: {formatNumber(yieldForecast.estimatedYield, 2)} {yieldForecast.unit}
@@ -108,7 +174,17 @@ export function PredictionPanel({ assessment, isLoading, farmName, fieldName }: 
                     Produção total: {formatNumber(yieldForecast.totalProduction, 2)} t
                   </span>
                 )}
-                <span>Confiança: {confidenceLabel[yieldForecast.confidence]}</span>
+                <span className={styles.periodLine}>
+                  <span>Confiança: {confidenceLabel[yieldForecast.confidence]}</span>
+                  <button
+                    type="button"
+                    className={styles.infoButton}
+                    data-tooltip={yieldConfidenceInfo}
+                    aria-label="Informações sobre a confiança da produtividade estimada"
+                  >
+                    <FaCircleInfo />
+                  </button>
+                </span>
               </div>
               {yieldForecast.factors.length > 0 && (
                 <div className={styles.yieldFactors}>
@@ -149,7 +225,17 @@ export function PredictionPanel({ assessment, isLoading, farmName, fieldName }: 
               {[...categories].sort((a, b) => b.score - a.score).map((category) => (
                 <div key={category.id} className={styles.categoryItem}>
                   <div className={styles.categoryHeader}>
-                    <strong>{category.label}</strong>
+                    <span className={styles.periodLine}>
+                      <strong>{category.label}</strong>
+                      <button
+                        type="button"
+                        className={styles.infoButton}
+                        data-tooltip={buildCategoryRangeInfo(category)}
+                        aria-label={`Informações sobre a faixa analisada em ${category.label}`}
+                      >
+                        <FaCircleInfo />
+                      </button>
+                    </span>
                     <span className={`${styles.badge} ${styles[category.level.toLowerCase()]}`}>
                       {riskLabel[category.level]}
                     </span>
