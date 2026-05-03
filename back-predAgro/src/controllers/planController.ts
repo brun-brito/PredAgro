@@ -40,9 +40,16 @@ export async function createPlan(req: Request, res: Response) {
     String(req.params.fieldId),
     plan.id
   );
+  const planWithRiskCache = {
+    ...plan,
+    riskCache: {
+      assessment,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    },
+  };
 
   res.status(201).json({
-    plan,
+    plan: planWithRiskCache,
     assessment,
   });
 }

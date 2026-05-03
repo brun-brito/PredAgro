@@ -744,7 +744,10 @@ export async function getPlanRisk(
   fieldId: string,
   planId: string
 ): Promise<PlanRiskAssessment> {
-  const plan = await planService.getById(userId, farmId, fieldId, planId);
+  const [plan, field] = await Promise.all([
+    planService.getById(userId, farmId, fieldId, planId),
+    fieldService.getById(userId, farmId, fieldId),
+  ]);
   const crop = cropService.getCropById(plan.cropId);
 
   if (!crop) {
@@ -758,9 +761,6 @@ export async function getPlanRisk(
   if (totalDays > MAX_PLAN_DAYS) {
     throw new AppError(`O planejamento informado ultrapassa o limite de ${MAX_PLAN_DAYS} dias.`, 400);
   }
-
-  const forecast = await weatherService.getForecast(userId, farmId, fieldId, { days: MAX_FORECAST_DAYS });
-  const field = await fieldService.getById(userId, farmId, fieldId);
 
   if (field.centroidLat === null || field.centroidLon === null) {
     throw new AppError('Talhão sem delimitação. Defina o polígono antes de consultar o risco.', 400);
@@ -776,6 +776,11 @@ export async function getPlanRisk(
   ) {
     return plan.riskCache.assessment;
   }
+
+  const forecast = await weatherService.getForecast(userId, farmId, fieldId, {
+    days: MAX_FORECAST_DAYS,
+    field,
+  });
   const planDates = buildPlanDates(startDate, totalDays);
   const forecastByDate = new Map(forecast.days.map((day) => [day.date, day]));
   const forecastCoverage = planDates.filter((date) => forecastByDate.has(date)).length;

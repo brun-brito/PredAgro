@@ -5,7 +5,7 @@ import * as fieldService from './fieldService';
 import { getCropById, isActiveCropId } from './cropService';
 import * as weatherService from './weatherService';
 import * as historicalWeatherService from './historicalWeatherService';
-import type { CropProfile, PlanCycleEstimate, PlantingPlan, WeatherDay } from '../types/domain';
+import type { CropProfile, Field, PlanCycleEstimate, PlantingPlan, WeatherDay } from '../types/domain';
 
 const MAX_PLAN_DAYS = 180;
 const MAX_START_LEAD_DAYS = 365;
@@ -138,9 +138,10 @@ export async function estimateCycle(
   userId: string,
   farmId: string,
   fieldId: string,
-  payload: PlanPayload
+  payload: PlanPayload,
+  fieldInput?: Field
 ): Promise<PlanCycleEstimate> {
-  const field = await fieldService.getById(userId, farmId, fieldId);
+  const field = fieldInput ?? await fieldService.getById(userId, farmId, fieldId);
 
   if (field.areaHa === null || field.centroidLat === null || field.centroidLon === null) {
     throw new AppError('Talhão sem delimitação. Defina o polígono antes de gerar o planejamento.', 400);
@@ -158,7 +159,7 @@ export async function estimateCycle(
   );
 
   const [forecastSnapshot, historicalDays] = await Promise.all([
-    weatherService.getForecast(userId, farmId, fieldId, { days: MAX_FORECAST_DAYS }),
+    weatherService.getForecast(userId, farmId, fieldId, { days: MAX_FORECAST_DAYS, field }),
     historicalWeatherService.getHistoricalNormals(field.centroidLat, field.centroidLon, startDate, maxProjectionDays),
   ]);
 
@@ -269,7 +270,7 @@ export async function create(
   }
 
   const crop = validateCrop(payload);
-  const cycleEstimate = await estimateCycle(userId, farmId, fieldId, payload);
+  const cycleEstimate = await estimateCycle(userId, farmId, fieldId, payload, field);
   const totalDays = diffDaysInclusive(
     parseDate(cycleEstimate.startDate, 'startDate'),
     parseDate(cycleEstimate.endDate, 'endDate')

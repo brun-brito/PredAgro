@@ -4,6 +4,7 @@ import type { WeatherDay } from '../types/domain';
 const ARCHIVE_BASE_URL = 'https://archive-api.open-meteo.com/v1/archive';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const YEARS_BACK = 10;
+const FETCH_CONCURRENCY = 3;
 
 interface ArchiveDailyResponse {
   time: string[];
@@ -33,6 +34,29 @@ function formatDate(date: Date) {
 
 function addDays(date: Date, days: number) {
   return new Date(date.getTime() + days * DAY_MS);
+}
+
+async function mapWithConcurrency<TInput, TOutput>(
+  values: TInput[],
+  concurrency: number,
+  mapper: (value: TInput) => Promise<TOutput>
+) {
+  const results = new Array<TOutput>(values.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < values.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await mapper(values[currentIndex]);
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, values.length) }, () => worker())
+  );
+
+  return results;
 }
 
 async function fetchArchiveRange(lat: number, lon: number, startDate: string, endDate: string): Promise<WeatherDay[]> {
@@ -108,19 +132,14 @@ export async function getHistoricalNormals(
     throw new AppError('Histórico climático insuficiente para o período selecionado.', 400);
   }
 
-  const yearlySeries: WeatherDay[][] = [];
-
-  for (const year of years) {
-    const histStart = new Date(Date.UTC(year, planStart.getUTCMonth(), planStart.getUTCDate()));
-    const histEnd = addDays(histStart, totalDays - 1);
-    const series = await fetchArchiveRange(lat, lon, formatDate(histStart), formatDate(histEnd));
-
-    if (series.length !== totalDays) {
-      continue;
-    }
-
-    yearlySeries.push(series);
-  }
+  const yearlySeries = (
+    await mapWithConcurrency(years, FETCH_CONCURRENCY, async (year) => {
+      const histStart = new Date(Date.UTC(year, planStart.getUTCMonth(), planStart.getUTCDate()));
+      const histEnd = addDays(histStart, totalDays - 1);
+      const series = await fetchArchiveRange(lat, lon, formatDate(histStart), formatDate(histEnd));
+      return series.length === totalDays ? series : null;
+    })
+  ).filter((series): series is WeatherDay[] => series !== null);
 
   if (yearlySeries.length === 0) {
     throw new AppError('Histórico climático indisponível para o período selecionado.', 502);

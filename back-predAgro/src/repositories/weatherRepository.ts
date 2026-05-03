@@ -47,6 +47,26 @@ export async function listSnapshots(
   return snapshot.docs.map((doc) => doc.data() as WeatherSnapshot);
 }
 
+export async function listLatestSnapshotsByUserId(userId: string): Promise<Map<string, WeatherSnapshot>> {
+  const snapshot = await firebaseFirestore
+    .collectionGroup('weatherSnapshots')
+    .where('userId', '==', userId)
+    .get();
+
+  const latestByFieldId = new Map<string, WeatherSnapshot>();
+
+  snapshot.docs.forEach((doc) => {
+    const weatherSnapshot = doc.data() as WeatherSnapshot;
+    const current = latestByFieldId.get(weatherSnapshot.fieldId);
+
+    if (!current || new Date(weatherSnapshot.fetchedAt).getTime() > new Date(current.fetchedAt).getTime()) {
+      latestByFieldId.set(weatherSnapshot.fieldId, weatherSnapshot);
+    }
+  });
+
+  return latestByFieldId;
+}
+
 export async function createSnapshot(
   userId: string,
   farmId: string,

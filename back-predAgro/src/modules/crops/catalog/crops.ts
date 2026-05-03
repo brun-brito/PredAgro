@@ -4,7 +4,7 @@ export const cropCatalog: CropProfile[] = [
   {
     id: 'milho',
     name: 'Milho 1ª safra',
-    description: 'Milho de sequeiro com análise agroclimática baseada no ZARC da 1ª safra.',
+    description: 'Análise agroclimática baseada no ZARC da 1ª safra.',
     cycleDays: 120,
     cycleModel: {
       method: 'thermal-time',

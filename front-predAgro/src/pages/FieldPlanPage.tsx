@@ -23,6 +23,26 @@ import styles from './FieldPlanPage.module.css';
 const PRIMARY_CROP_ID = 'milho';
 const PRIMARY_CROP_NAME = 'Milho 1ª safra';
 
+function isPlanRiskCacheValid(plan: PlantingPlan, field: Field | null) {
+  if (!plan.riskCache) {
+    return false;
+  }
+
+  if (new Date(plan.riskCache.expiresAt).getTime() <= Date.now()) {
+    return false;
+  }
+
+  if (field && new Date(plan.riskCache.assessment.generatedAt).getTime() < new Date(field.updatedAt).getTime()) {
+    return false;
+  }
+
+  return (
+    plan.riskCache.assessment.planId === plan.id &&
+    plan.riskCache.assessment.startDate === plan.startDate &&
+    plan.riskCache.assessment.endDate === plan.endDate
+  );
+}
+
 export function FieldPlanPage() {
   const { farmId, fieldId } = useParams();
   const { token } = useAuth();
@@ -57,6 +77,10 @@ export function FieldPlanPage() {
     () => crops.find((crop) => crop.id === PRIMARY_CROP_ID) ?? null,
     [crops]
   );
+  const selectedPlan = useMemo(
+    () => visiblePlans.find((plan) => plan.id === selectedPlanId) ?? null,
+    [selectedPlanId, visiblePlans]
+  );
 
   const planDateLimits = useMemo(() => {
     const today = new Date(`${todayDate}T00:00:00Z`);
@@ -75,6 +99,19 @@ export function FieldPlanPage() {
   }, []);
 
   useEffect(() => {
+    if (!selectedPlan) {
+      return;
+    }
+
+    if (isPlanRiskCacheValid(selectedPlan, field)) {
+      setAssessment(selectedPlan.riskCache!.assessment);
+      return;
+    }
+
+    setAssessment((current) => (current?.planId === selectedPlan.id ? null : current));
+  }, [field, selectedPlan]);
+
+  useEffect(() => {
     let isMounted = true;
 
     async function loadData() {
@@ -91,6 +128,7 @@ export function FieldPlanPage() {
       const cachedCrops = cropService.getCachedList(token);
       const cachedPlans = planService.getCachedListByField(token, farmIdValue, fieldIdValue);
       const cachedForecast = fieldService.getCachedForecast(token, farmIdValue, fieldIdValue);
+      const currentField = cachedField?.field ?? null;
 
       if (cachedField && isMounted) {
         setField(cachedField.field);
@@ -119,9 +157,13 @@ export function FieldPlanPage() {
         const firstVisiblePlan = cachedPlans.plans.find((plan) => plan.cropId === PRIMARY_CROP_ID);
         if (firstVisiblePlan) {
           setSelectedPlanId(firstVisiblePlan.id);
-          const cachedRisk = planService.getCachedRisk(token, farmIdValue, fieldIdValue, firstVisiblePlan.id);
-          if (cachedRisk) {
-            setAssessment(cachedRisk.assessment);
+          if (isPlanRiskCacheValid(firstVisiblePlan, currentField)) {
+            setAssessment(firstVisiblePlan.riskCache!.assessment);
+          } else if (!firstVisiblePlan.riskCache) {
+            const cachedRisk = planService.getCachedRisk(token, farmIdValue, fieldIdValue, firstVisiblePlan.id);
+            if (cachedRisk) {
+              setAssessment(cachedRisk.assessment);
+            }
           }
         }
       }
@@ -141,7 +183,11 @@ export function FieldPlanPage() {
         if (
           firstVisiblePlan &&
           cachedField.field.geometry &&
-          !planService.getCachedRisk(token, farmIdValue, fieldIdValue, firstVisiblePlan.id)
+          !(
+            isPlanRiskCacheValid(firstVisiblePlan, cachedField.field) ||
+            (!firstVisiblePlan.riskCache &&
+              planService.getCachedRisk(token, farmIdValue, fieldIdValue, firstVisiblePlan.id))
+          )
         ) {
           void loadRisk(firstVisiblePlan.id, token, farmIdValue, fieldIdValue, true);
         }
@@ -199,6 +245,9 @@ export function FieldPlanPage() {
           const firstVisiblePlan = plansResponse.plans.find((plan) => plan.cropId === PRIMARY_CROP_ID);
           if (firstVisiblePlan) {
             setSelectedPlanId(firstVisiblePlan.id);
+            if (isPlanRiskCacheValid(firstVisiblePlan, fieldResponse.field)) {
+              setAssessment(firstVisiblePlan.riskCache!.assessment);
+            }
           }
         }
 
@@ -221,11 +270,11 @@ export function FieldPlanPage() {
         }
 
         if (isMounted && fieldResponse.field.geometry) {
-          const latestPlanId = plansResponse.plans.find((plan) => plan.cropId === PRIMARY_CROP_ID)?.id;
-          if (!latestPlanId) {
+          const latestPlan = plansResponse.plans.find((plan) => plan.cropId === PRIMARY_CROP_ID);
+          if (!latestPlan || isPlanRiskCacheValid(latestPlan, fieldResponse.field)) {
             return;
           }
-          await loadRisk(latestPlanId, token, farmIdValue, fieldIdValue, true);
+          await loadRisk(latestPlan.id, token, farmIdValue, fieldIdValue, true);
         }
       } catch (error) {
         if (isMounted) {
@@ -258,8 +307,16 @@ export function FieldPlanPage() {
       return;
     }
 
+    const selectedPlan = plans.find((plan) => plan.id === planId) ?? null;
+    if (selectedPlan && isPlanRiskCacheValid(selectedPlan, field)) {
+      setAssessment(selectedPlan.riskCache!.assessment);
+      setPlanFeedback(null);
+      setIsRiskLoading(false);
+      return;
+    }
+
     const cachedRisk = planService.getCachedRisk(authToken, farmParam, fieldParam, planId);
-    if (cachedRisk) {
+    if (cachedRisk && (!selectedPlan?.riskCache || isPlanRiskCacheValid(selectedPlan, field))) {
       if (isMountedRef.current) {
         setAssessment(cachedRisk.assessment);
         setPlanFeedback(null);
@@ -359,6 +416,23 @@ export function FieldPlanPage() {
     }
 
     setSelectedPlanId(planId);
+    const nextPlan = plans.find((plan) => plan.id === planId) ?? null;
+
+    if (nextPlan && isPlanRiskCacheValid(nextPlan, field)) {
+      setAssessment(nextPlan.riskCache!.assessment);
+      setPlanFeedback(null);
+      setIsRiskLoading(false);
+      return;
+    }
+
+    const cachedRisk = planService.getCachedRisk(token, farmIdValue, fieldIdValue, planId);
+    if (cachedRisk && !nextPlan?.riskCache) {
+      setAssessment(cachedRisk.assessment);
+      setPlanFeedback(null);
+      setIsRiskLoading(false);
+      return;
+    }
+
     setAssessment(null);
     void loadRisk(planId, token, farmIdValue, fieldIdValue, Boolean(field?.geometry));
   }

@@ -21,6 +21,17 @@ function updatePlanListCache(token: string, farmId: string, fieldId: string, pla
   setCache(planListKey(token, farmId, fieldId), { plans });
 }
 
+function syncPlanInListCache(token: string, farmId: string, fieldId: string, planId: string, updater: (plan: PlantingPlan) => PlantingPlan) {
+  const cached = getCache<{ plans: PlantingPlan[] }>(planListKey(token, farmId, fieldId));
+  if (!cached) {
+    return;
+  }
+
+  setCache(planListKey(token, farmId, fieldId), {
+    plans: cached.plans.map((plan) => (plan.id === planId ? updater(plan) : plan)),
+  });
+}
+
 function updatePlanRiskCache(
   token: string,
   farmId: string,
@@ -55,6 +66,11 @@ export const planService = {
       { token }
     );
     setCache(planListKey(token, farmId, fieldId), response);
+    response.plans.forEach((plan) => {
+      if (plan.riskCache && new Date(plan.riskCache.expiresAt).getTime() > Date.now()) {
+        updatePlanRiskCache(token, farmId, fieldId, plan.id, plan.riskCache.assessment);
+      }
+    });
     return response;
   },
   create: async (token: string, farmId: string, fieldId: string, payload: PlanPayload) => {
@@ -83,6 +99,15 @@ export const planService = {
       { token }
     );
     setCache(planRiskKey(token, farmId, fieldId, planId), response);
+    syncPlanInListCache(token, farmId, fieldId, planId, (plan) => ({
+      ...plan,
+      riskCache: plan.riskCache
+        ? {
+            ...plan.riskCache,
+            assessment: response.assessment,
+          }
+        : plan.riskCache,
+    }));
     return response;
   },
   remove: async (token: string, farmId: string, fieldId: string, planId: string) => {

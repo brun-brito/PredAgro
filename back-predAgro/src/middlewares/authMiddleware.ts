@@ -1,7 +1,18 @@
 import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/AppError';
 import { firebaseAuth } from '../config/firebaseAdmin';
-import * as userRepository from '../repositories/userRepository';
+
+function resolveUserName(name: unknown, email: unknown) {
+  if (typeof name === 'string' && name.trim().length > 0) {
+    return name.trim();
+  }
+
+  if (typeof email === 'string' && email.includes('@')) {
+    return email.split('@')[0].trim() || 'Usuário PredAgro';
+  }
+
+  return 'Usuário PredAgro';
+}
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const authorizationHeader = req.headers.authorization;
@@ -15,18 +26,11 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
 
   try {
     const decodedToken = await firebaseAuth.verifyIdToken(token);
-    const authUser = await firebaseAuth.getUser(decodedToken.uid);
-
-    const persistedUser = await userRepository.upsert({
-      id: authUser.uid,
-      name: authUser.displayName ?? 'Usuário PredAgro',
-      email: authUser.email ?? '',
-    });
 
     req.user = {
-      id: persistedUser.id,
-      email: persistedUser.email,
-      name: persistedUser.name,
+      id: decodedToken.uid,
+      email: typeof decodedToken.email === 'string' ? decodedToken.email : '',
+      name: resolveUserName(decodedToken.name, decodedToken.email),
     };
 
     next();

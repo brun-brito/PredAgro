@@ -158,6 +158,7 @@ export interface PlantingPlan {
   areaHa: number;
   createdAt: string;
   updatedAt: string;
+  riskCache?: PlanRiskCache;
 }
 
 export interface PlanCycleEstimate {
@@ -201,6 +202,7 @@ export interface PlanRiskAssessment {
   fieldId: string;
   cropId: string;
   cropName: string;
+  assessmentVersion: string;
   startDate: string;
   endDate: string;
   cycleEstimate?: PlanCycleEstimate;
@@ -212,6 +214,11 @@ export interface PlanRiskAssessment {
   notes: string[];
   yieldForecast?: YieldForecast;
   generatedAt: string;
+}
+
+export interface PlanRiskCache {
+  assessment: PlanRiskAssessment;
+  expiresAt: string;
 }
 
 export interface YieldForecast {

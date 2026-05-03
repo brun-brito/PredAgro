@@ -1,7 +1,7 @@
 import { AppError } from '../utils/AppError';
 import * as fieldService from './fieldService';
 import * as weatherRepository from '../repositories/weatherRepository';
-import type { WeatherDay, WeatherSnapshot } from '../types/domain';
+import type { Field, WeatherDay, WeatherSnapshot } from '../types/domain';
 
 const OPEN_METEO_BASE_URL = 'https://api.open-meteo.com/v1/forecast';
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -90,9 +90,9 @@ export async function getForecast(
   userId: string,
   farmId: string,
   fieldId: string,
-  options?: { days?: number; force?: boolean }
+  options?: { days?: number; force?: boolean; field?: Field }
 ): Promise<WeatherSnapshot> {
-  const field = await fieldService.getById(userId, farmId, fieldId);
+  const field = options?.field ?? await fieldService.getById(userId, farmId, fieldId);
   if (field.centroidLat === null || field.centroidLon === null) {
     throw new AppError('Talhão sem delimitação. Defina o polígono antes de consultar o clima.', 400);
   }
