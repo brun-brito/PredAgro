@@ -164,7 +164,9 @@ export function FieldWeatherPage() {
           </div>
         ) : (
           <div className={styles.grid}>
-            <WeatherPanel snapshot={snapshot} isLoading={isLoading || isRefreshing} />
+            <div className={styles.weatherPanelFull}>
+              <WeatherPanel snapshot={snapshot} isLoading={isLoading || isRefreshing} />
+            </div>
             {!snapshot && (
               <div className={styles.card}>
                 <h2>Próximos passos</h2>

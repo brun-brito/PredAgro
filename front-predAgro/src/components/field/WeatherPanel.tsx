@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { WeatherSnapshot } from '../../types/domain';
 import { LoadingState } from '../ui/LoadingState';
-import { formatDate, formatDateTime, formatNumber } from '../../utils/formatters';
+import { formatDate, formatDateTime, formatNumber, formatPercentage } from '../../utils/formatters';
 import styles from './WeatherPanel.module.css';
 
 interface WeatherPanelProps {
@@ -119,16 +119,31 @@ export function WeatherPanel({ snapshot, isLoading }: WeatherPanelProps) {
       )}
       {isInvalidRange && <p className={styles.invalidRange}>A data final deve ser igual ou posterior à inicial.</p>}
 
-      <div className={styles.list}>
-        {filteredDays.map((day) => (
-          <div key={day.date} className={styles.dayItem}>
-            <strong>{formatDate(day.date)}</strong>
-            <span>
-              {formatNumber(day.temperatureMin, 0)}°C / {formatNumber(day.temperatureMax, 0)}°C
-            </span>
-            <span>{formatNumber(day.precipitationSum, 1)} mm</span>
-          </div>
-        ))}
+      <div className={styles.tableWrapper}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Dia</th>
+              <th>Temperatura</th>
+              <th>Chuva</th>
+              <th>Umidade</th>
+              <th>Vento</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredDays.map((day) => (
+              <tr key={day.date}>
+                <td>{formatDate(day.date)}</td>
+                <td>
+                  {formatNumber(day.temperatureMin, 0)}°C / {formatNumber(day.temperatureMax, 0)}°C
+                </td>
+                <td>{formatNumber(day.precipitationSum, 1)} mm</td>
+                <td>{day.humidityMean !== undefined ? formatPercentage(day.humidityMean) : 'N/D'}</td>
+                <td>{day.windSpeedMax !== undefined ? `${formatNumber(day.windSpeedMax, 1)} km/h` : 'N/D'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {filteredDays.length === 0 && !isInvalidRange && (

@@ -12,16 +12,14 @@ import type {
 } from '../types/domain';
 import * as cropService from './cropService';
 import * as planService from './planService';
-import * as weatherService from './weatherService';
 import * as fieldService from './fieldService';
 import * as historicalWeatherService from './historicalWeatherService';
 import { logger } from '../utils/logger';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const MAX_FORECAST_DAYS = 16;
 const MAX_PLAN_DAYS = 180;
 const RISK_CACHE_TTL_MS = 60 * 60 * 1000;
-const ASSESSMENT_VERSION = 'milho-zarc-v6';
+const ASSESSMENT_VERSION = 'milho-zarc-v7';
 const RAINY_DAY_THRESHOLD_MM = 3;
 const HARVEST_WINDOW_MIN_TOTAL_RAIN_MM = 25;
 
@@ -237,14 +235,12 @@ function computeYieldForecast({
   planArea,
   categories,
   overallScore,
-  mode,
   combinedDays,
 }: {
   crop: CropProfile;
   planArea: number | null;
   categories: RiskCategoryResult[];
   overallScore: number;
-  mode: 'forecast' | 'mixed' | 'historical';
   combinedDays: WeatherDay[];
 }): YieldForecast | null {
   if (!crop.yieldModel) {
@@ -267,7 +263,7 @@ function computeYieldForecast({
   const precipAvg = average(combinedDays.map((day) => day.precipitationSum));
   const variability = standardDeviation(combinedDays.map((day) => day.precipitationSum));
 
-  const baseSpread = mode === 'forecast' ? 0.1 : mode === 'mixed' ? 0.2 : 0.3;
+  const baseSpread = 0.18;
   const variabilitySpread = clamp(variability / Math.max(precipAvg, 1) * 0.05, 0, 0.1);
   const spread = baseSpread + variabilitySpread;
 
@@ -294,22 +290,17 @@ function computeYieldForecast({
     'Estimativa calculada por modelo agroclimático parametrizado para milho 1ª safra.',
     'Base de produtividade ajustada pela série histórica da Conab para a cultura.',
     `Média térmica do período: ${tempAvg.toFixed(1)}°C; precipitação média diária: ${precipAvg.toFixed(1)} mm.`,
-    mode === 'forecast'
-      ? 'Baseada em previsão meteorológica de curto prazo.'
-      : mode === 'mixed'
-      ? 'Parte do período utiliza climatologia histórica.'
-      : 'Baseada exclusivamente em climatologia histórica.',
+    'Faixa de produtividade calculada sobre climatologia histórica do local e variabilidade hídrica observada no período projetado.',
   ];
 
   return {
-    model: 'milho-zarc-v2',
+    model: 'milho-zarc-v3',
     unit: 't/ha',
     baselineYield: Number(baselineYield.toFixed(2)),
     estimatedYield: Number(estimatedYield.toFixed(2)),
     minYield: Number(min.toFixed(2)),
     maxYield: Number(max.toFixed(2)),
     totalProduction,
-    confidence: mode === 'forecast' ? 'high' : mode === 'mixed' ? 'medium' : 'low',
     notes,
     factors,
   };
@@ -624,9 +615,6 @@ function logAssessmentDebug({
   field,
   crop,
   totalDays,
-  forecastCoverage,
-  mode,
-  confidence,
   stageWeightedScore,
   categoryWeightedScore,
   overallScore,
@@ -643,9 +631,6 @@ function logAssessmentDebug({
   field: Field;
   crop: CropProfile;
   totalDays: number;
-  forecastCoverage: number;
-  mode: 'forecast' | 'mixed' | 'historical';
-  confidence: 'high' | 'medium' | 'low';
   stageWeightedScore: number;
   categoryWeightedScore: number;
   overallScore: number;
@@ -666,10 +651,6 @@ function logAssessmentDebug({
     cropName: crop.name,
     assessmentVersion: ASSESSMENT_VERSION,
     totalDays,
-    forecastCoverage,
-    historicalCoverage: totalDays - forecastCoverage,
-    mode,
-    confidence,
     coordinates: {
       lat: field.centroidLat,
       lon: field.centroidLon,
@@ -716,7 +697,6 @@ function logAssessmentDebug({
           minYield: yieldForecast.minYield,
           maxYield: yieldForecast.maxYield,
           totalProduction: yieldForecast.totalProduction,
-          confidence: yieldForecast.confidence,
           factors: yieldForecast.factors,
         }
       : null,
@@ -777,30 +757,15 @@ export async function getPlanRisk(
     return plan.riskCache.assessment;
   }
 
-  const forecast = await weatherService.getForecast(userId, farmId, fieldId, {
-    days: MAX_FORECAST_DAYS,
-    field,
-  });
   const planDates = buildPlanDates(startDate, totalDays);
-  const forecastByDate = new Map(forecast.days.map((day) => [day.date, day]));
-  const forecastCoverage = planDates.filter((date) => forecastByDate.has(date)).length;
-
-  let historicalSeries: WeatherDay[] = [];
-  if (forecastCoverage < totalDays) {
-    historicalSeries = await historicalWeatherService.getHistoricalNormals(
-      field.centroidLat,
-      field.centroidLon,
-      startDate,
-      totalDays
-    );
-  }
+  const historicalSeries = await historicalWeatherService.getHistoricalNormals(
+    field.centroidLat,
+    field.centroidLon,
+    startDate,
+    totalDays
+  );
 
   const combinedDays = planDates.map((date, index) => {
-    const forecastDay = forecastByDate.get(date);
-    if (forecastDay) {
-      return forecastDay;
-    }
-
     const historicalDay = historicalSeries[index];
     if (!historicalDay) {
       throw new AppError('Dados climáticos insuficientes para o período selecionado.', 400);
@@ -835,25 +800,13 @@ export async function getPlanRisk(
   const categoryWeightedScore = computeCategoryWeightedScore(categories, crop);
   const overallScore = clamp(Math.max(stageWeightedScore, categoryWeightedScore));
 
-  const mode = forecastCoverage === totalDays ? 'forecast' : forecastCoverage === 0 ? 'historical' : 'mixed';
-  const confidence = mode === 'forecast' ? 'high' : mode === 'mixed' ? 'medium' : 'low';
   const notes: string[] = [];
 
-  if (mode === 'forecast') {
-    notes.push(`Análise baseada em previsão meteorológica de curto prazo (até ${MAX_FORECAST_DAYS} dias).`);
-  } else if (mode === 'mixed') {
-    notes.push(
-      `Parte do período usa climatologia histórica, não previsão diária. Previsão direta disponível apenas para os próximos ${MAX_FORECAST_DAYS} dias.`
-    );
-  } else {
-    notes.push(
-      'Análise baseada em climatologia histórica, com menor confiabilidade para o dia a dia.'
-    );
-  }
+  notes.push('Análise baseada em climatologia histórica do local para todo o período do plano.');
 
   if (plan.cycleEstimate) {
     notes.push(
-      `Data final estimada para ${formatDate(parseDate(plan.cycleEstimate.endDate))} com ciclo projetado de ${plan.cycleEstimate.estimatedCycleDays} dias, usando soma térmica simplificada e cobertura ${plan.cycleEstimate.dataMode}.`
+      `Data final estimada para ${formatDate(parseDate(plan.cycleEstimate.endDate))} com ciclo projetado de ${plan.cycleEstimate.estimatedCycleDays} dias, usando soma térmica simplificada e climatologia histórica do local.`
     );
   }
 
@@ -862,7 +815,6 @@ export async function getPlanRisk(
     planArea: plan.areaHa ?? null,
     categories,
     overallScore,
-    mode,
     combinedDays,
   });
 
@@ -875,9 +827,6 @@ export async function getPlanRisk(
     field,
     crop,
     totalDays,
-    forecastCoverage,
-    mode,
-    confidence,
     stageWeightedScore,
     categoryWeightedScore,
     overallScore,
@@ -899,8 +848,6 @@ export async function getPlanRisk(
     riskLevel: levelFromScore(overallScore),
     score: Number(overallScore.toFixed(1)),
     categories,
-    mode,
-    confidence,
     notes,
     yieldForecast: yieldForecast ?? undefined,
     generatedAt: new Date().toISOString(),

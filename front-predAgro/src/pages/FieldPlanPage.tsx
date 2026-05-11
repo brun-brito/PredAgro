@@ -55,7 +55,6 @@ export function FieldPlanPage() {
   const [plans, setPlans] = useState<PlantingPlan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [assessment, setAssessment] = useState<PlanRiskAssessment | null>(null);
-  const [forecastEndDate, setForecastEndDate] = useState<string | null>(null);
   const [planValues, setPlanValues] = useState<PlanPayload>({
     cropId: PRIMARY_CROP_ID,
     startDate: '',
@@ -127,7 +126,6 @@ export function FieldPlanPage() {
       const cachedFarm = farmService.getCachedById(token, farmIdValue);
       const cachedCrops = cropService.getCachedList(token);
       const cachedPlans = planService.getCachedListByField(token, farmIdValue, fieldIdValue);
-      const cachedForecast = fieldService.getCachedForecast(token, farmIdValue, fieldIdValue);
       const currentField = cachedField?.field ?? null;
 
       if (cachedField && isMounted) {
@@ -168,11 +166,6 @@ export function FieldPlanPage() {
         }
       }
 
-      if (cachedForecast && isMounted) {
-        const days = cachedForecast.snapshot.days;
-        setForecastEndDate(days.length ? days[days.length - 1].date : null);
-      }
-
       if (cachedField && cachedFarm && cachedCrops && cachedPlans) {
         if (isMounted) {
           setPlanFeedback(null);
@@ -210,9 +203,6 @@ export function FieldPlanPage() {
       if (!cachedCrops) {
         setCrops([]);
       }
-      if (!cachedForecast) {
-        setForecastEndDate(null);
-      }
       if (!cachedCrops) {
         setPlanValues({ cropId: PRIMARY_CROP_ID, startDate: '' });
       }
@@ -249,24 +239,6 @@ export function FieldPlanPage() {
               setAssessment(firstVisiblePlan.riskCache!.assessment);
             }
           }
-        }
-
-        if (fieldResponse.field.geometry) {
-          if (!cachedForecast) {
-            try {
-              const forecastResponse = await fieldService.getForecast(token, farmIdValue, fieldIdValue);
-              if (isMounted) {
-                const days = forecastResponse.snapshot.days;
-                setForecastEndDate(days.length ? days[days.length - 1].date : null);
-              }
-            } catch {
-              if (isMounted) {
-                setForecastEndDate(null);
-              }
-            }
-          }
-        } else if (isMounted) {
-          setForecastEndDate(null);
         }
 
         if (isMounted && fieldResponse.field.geometry) {
@@ -505,7 +477,7 @@ export function FieldPlanPage() {
             <div className={styles.card}>
               <h2>Novo plano de plantio</h2>
               {!field?.geometry && (
-                <p className={styles.warning}>Delimite o talhão para gerar análise e previsões confiáveis.</p>
+                <p className={styles.warning}>Delimite o talhão para gerar análise histórica e cálculo completo do plano.</p>
               )}
               <div className={styles.planForm}>
                 <div className={styles.fixedCropField}>
@@ -530,10 +502,8 @@ export function FieldPlanPage() {
               <p className={styles.helperText}>
                 A data inicial pode ser informada para os próximos {maxStartLeadDays} dias.{' '}
                 {field?.geometry
-                  ? `Previsão diária disponível até ${
-                      forecastEndDate ? formatDate(forecastEndDate) : '16 dias'
-                    }; após isso o sistema complementa a análise com climatologia histórica.`
-                  : 'Delimite o talhão para liberar previsões diárias, estimativa do ciclo e a análise completa.'}
+                  ? 'O planejamento usa climatologia histórica do local para projetar o ciclo, o risco climático e a produtividade.'
+                  : 'Delimite o talhão para liberar a estimativa do ciclo e a análise completa do planejamento.'}
               </p>
               {planFeedback && <p className={styles.feedback}>{planFeedback}</p>}
               <div className={styles.planActions}>

@@ -17,18 +17,6 @@ const riskLabel = {
   HIGH: 'Alto',
 };
 
-const modeLabel = {
-  forecast: 'Previsão curta',
-  mixed: 'Previsão + tendência',
-  historical: 'Tendência histórica',
-};
-
-const confidenceLabel = {
-  high: 'Alta',
-  medium: 'Média',
-  low: 'Baixa',
-};
-
 function buildCategoryRangeInfo(category: PlanRiskAssessment['categories'][number]) {
   const parts = [
     category.acceptableRange ? `Faixa aceitável:\n${category.acceptableRange}` : null,
@@ -42,8 +30,6 @@ function buildCategoryRangeInfo(category: PlanRiskAssessment['categories'][numbe
 export function PredictionPanel({ assessment, isLoading, farmName, fieldName }: PredictionPanelProps) {
   const notes = assessment?.notes ?? [];
   const categories = assessment?.categories ?? [];
-  const mode = assessment?.mode ?? 'forecast';
-  const confidence = assessment?.confidence ?? 'high';
   const yieldForecast = assessment?.yieldForecast;
   const cycleEstimate = assessment?.cycleEstimate;
   const dominantCategories = [...categories]
@@ -61,44 +47,23 @@ export function PredictionPanel({ assessment, isLoading, farmName, fieldName }: 
         0
       )} °C, referência de ${cycleEstimate.referenceTempC.toFixed(
         1
-      )} °C, alvo de ${cycleEstimate.targetDegreeDays.toFixed(0)} graus-dia e cobertura ${cycleEstimate.dataMode}.`
-    : 'A data final foi estimada a partir da soma térmica simplificada e da cobertura climática do período.';
-  const assessmentConfidenceInfo = (() => {
-    const modeExplanation = {
-      forecast: 'Confiabilidade alta quando o período está coberto por previsão meteorológica direta.',
-      mixed:
-        'Confiabilidade média porque a análise combina previsão direta com climatologia histórica para completar o período.',
-      historical:
-        'Confiabilidade baixa porque a análise depende inteiramente de climatologia histórica, sem previsão diária para o ciclo.',
-    } satisfies Record<typeof mode, string>;
-
-    const coverageNote = cycleEstimate
-      ? `Cobertura usada no ciclo: ${cycleEstimate.forecastDaysUsed} dia(s) de previsão e ${cycleEstimate.historicalDaysUsed} dia(s) de histórico.`
-      : '';
-    const categoriesNote =
-      dominantCategories.length > 0
-        ? `Os fatores que mais pesaram no resultado foram ${dominantCategories.join(' e ')}.`
-        : 'Não houve categoria de risco dominante relevante no resultado.';
-
-    return [modeExplanation[mode], coverageNote, categoriesNote].filter(Boolean).join(' ');
-  })();
+      )} °C, alvo de ${cycleEstimate.targetDegreeDays.toFixed(0)} graus-dia e climatologia histórica do local.`
+    : 'A data final foi estimada a partir da soma térmica simplificada e da climatologia histórica do período.';
+  const assessmentMethodInfo =
+    dominantCategories.length > 0
+      ? `A análise usa climatologia histórica do local para todo o período do plano. Os fatores que mais pesaram no resultado foram ${dominantCategories.join(' e ')}.`
+      : 'A análise usa climatologia histórica do local para todo o período do plano.';
   const yieldConfidenceInfo = (() => {
-    const confidenceExplanation = {
-      high:
-        'Confiança alta porque a produtividade foi calculada com base em previsão direta no período analisado.',
-      medium:
-        'Confiança média porque a produtividade combina previsão direta com climatologia histórica no ciclo projetado.',
-      low:
-        'Confiança baixa porque a produtividade depende principalmente de climatologia histórica, com menor precisão dia a dia.',
-    } satisfies Record<NonNullable<typeof yieldForecast>['confidence'], string>;
-
     const factorsNote =
       dominantFactors.length > 0
         ? `Os impactos dominantes na produtividade foram ${dominantFactors.join(' e ')}.`
         : 'Não houve fator de impacto dominante relevante na produtividade estimada.';
 
     return yieldForecast
-      ? [confidenceExplanation[yieldForecast.confidence], factorsNote].join(' ')
+      ? [
+          'A estimativa de produtividade usa o modelo agroclimático parametrizado com base histórica do local.',
+          factorsNote,
+        ].join(' ')
       : '';
   })();
 
@@ -143,14 +108,13 @@ export function PredictionPanel({ assessment, isLoading, farmName, fieldName }: 
               </span>
               {cycleEstimate && <span>Ciclo projetado: {cycleEstimate.estimatedCycleDays} dias</span>}
               <span>Score geral: {assessment.score.toFixed(0)}</span>
-              <span>Tipo de análise: {modeLabel[mode]}</span>
               <span className={styles.periodLine}>
-                <span>Confiabilidade: {confidenceLabel[confidence]}</span>
+                <span>Base da análise: climatologia histórica do local</span>
                 <button
                   type="button"
                   className={styles.infoButton}
-                  data-tooltip={assessmentConfidenceInfo}
-                  aria-label="Informações sobre a confiabilidade da análise"
+                  data-tooltip={assessmentMethodInfo}
+                  aria-label="Informações sobre a base metodológica da análise"
                 >
                   <FaCircleInfo />
                 </button>
@@ -176,12 +140,12 @@ export function PredictionPanel({ assessment, isLoading, farmName, fieldName }: 
                   </span>
                 )}
                 <span className={styles.periodLine}>
-                  <span>Confiança: {confidenceLabel[yieldForecast.confidence]}</span>
+                  <span>Base da produtividade: modelo agroclimático histórico</span>
                   <button
                     type="button"
                     className={styles.infoButton}
                     data-tooltip={yieldConfidenceInfo}
-                    aria-label="Informações sobre a confiança da produtividade estimada"
+                    aria-label="Informações sobre a metodologia da produtividade estimada"
                   >
                     <FaCircleInfo />
                   </button>

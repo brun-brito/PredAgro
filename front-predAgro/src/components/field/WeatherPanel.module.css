@@ -21,11 +21,6 @@
   color: var(--slate-700);
 }
 
-.list {
-  display: grid;
-  gap: 8px;
-}
-
 .rangeControls {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -57,23 +52,40 @@
   font-weight: 600;
 }
 
-.dayItem {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 10px;
-  padding: 10px;
-  border-radius: var(--radius-sm);
+.tableWrapper {
+  overflow-x: auto;
   border: 1px solid rgba(149, 168, 162, 0.3);
+  border-radius: var(--radius-sm);
   background-color: var(--white);
-  align-items: center;
 }
 
-.dayItem strong {
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+}
+
+.table th,
+.table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(149, 168, 162, 0.22);
+  color: var(--slate-700);
+}
+
+.table th {
+  background-color: rgba(63, 155, 104, 0.08);
+  color: var(--green-900);
+  font-weight: 700;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table td:first-child {
   color: var(--slate-900);
-}
-
-.dayItem span {
-  color: var(--slate-600);
+  font-weight: 600;
 }
 
 .card small {
@@ -86,7 +98,7 @@
 }
 
 @media (max-width: 768px) {
-  .dayItem {
-    grid-template-columns: 1fr;
+  .table {
+    min-width: 620px;
   }
 }

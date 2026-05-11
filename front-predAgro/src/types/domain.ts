@@ -169,10 +169,6 @@ export interface PlanCycleEstimate {
   baseTempC: number;
   referenceTempC: number;
   targetDegreeDays: number;
-  dataMode: 'forecast' | 'mixed' | 'historical';
-  confidence: 'high' | 'medium' | 'low';
-  forecastDaysUsed: number;
-  historicalDaysUsed: number;
   notes: string[];
 }
 
@@ -209,8 +205,6 @@ export interface PlanRiskAssessment {
   riskLevel: RiskLevel;
   score: number;
   categories: RiskCategoryResult[];
-  mode: 'forecast' | 'mixed' | 'historical';
-  confidence: 'high' | 'medium' | 'low';
   notes: string[];
   yieldForecast?: YieldForecast;
   generatedAt: string;
@@ -229,7 +223,6 @@ export interface YieldForecast {
   minYield: number;
   maxYield: number;
   totalProduction: number | null;
-  confidence: 'high' | 'medium' | 'low';
   notes: string[];
   factors: Array<{
     id: RiskCategoryId;

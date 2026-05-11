@@ -3,13 +3,11 @@ import { requireString } from '../utils/validators';
 import * as planRepository from '../repositories/planRepository';
 import * as fieldService from './fieldService';
 import { getCropById, isActiveCropId } from './cropService';
-import * as weatherService from './weatherService';
 import * as historicalWeatherService from './historicalWeatherService';
 import type { CropProfile, Field, PlanCycleEstimate, PlantingPlan, WeatherDay } from '../types/domain';
 
 const MAX_PLAN_DAYS = 180;
 const MAX_START_LEAD_DAYS = 365;
-const MAX_FORECAST_DAYS = 16;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 interface PlanPayload {
@@ -57,18 +55,6 @@ function average(values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function getConfidenceFromMode(mode: PlanCycleEstimate['dataMode']): PlanCycleEstimate['confidence'] {
-  if (mode === 'forecast') {
-    return 'high';
-  }
-
-  if (mode === 'mixed') {
-    return 'medium';
-  }
-
-  return 'low';
-}
-
 function validateCrop(payload: PlanPayload): CropProfile {
   const cropId = requireString(payload.cropId, 'cropId', 2);
   const crop = isActiveCropId(cropId) ? getCropById(cropId) : null;
@@ -97,41 +83,19 @@ function validateStartDate(startDate: Date) {
   }
 }
 
-function mergeProjectedWeatherDays(
-  startDate: Date,
-  totalDays: number,
-  forecastDays: WeatherDay[],
-  historicalDays: WeatherDay[]
-) {
-  const forecastByDate = new Map(forecastDays.map((day) => [day.date, day]));
-  const sources: Array<'forecast' | 'historical'> = [];
-
-  const days = Array.from({ length: totalDays }, (_, index) => {
-    const currentDate = formatDate(addDays(startDate, index));
-    const forecastDay = forecastByDate.get(currentDate);
+function buildHistoricalProjection(startDate: Date, totalDays: number, historicalDays: WeatherDay[]) {
+  return Array.from({ length: totalDays }, (_, index) => {
     const historicalDay = historicalDays[index];
-
-    if (forecastDay) {
-      sources.push('forecast');
-      return forecastDay;
-    }
 
     if (!historicalDay) {
       throw new AppError('Histórico climático insuficiente para estimar o ciclo do milho.', 502);
     }
 
-    sources.push('historical');
-
     return {
       ...historicalDay,
-      date: currentDate,
+      date: formatDate(addDays(startDate, index)),
     };
   });
-
-  return {
-    days,
-    sources,
-  };
 }
 
 export async function estimateCycle(
@@ -158,23 +122,19 @@ export async function estimateCycle(
     ((crop.cycleDays ?? maxProjectionDays) * (cycleModel.referenceTempC - cycleModel.baseTempC)).toFixed(1)
   );
 
-  const [forecastSnapshot, historicalDays] = await Promise.all([
-    weatherService.getForecast(userId, farmId, fieldId, { days: MAX_FORECAST_DAYS, field }),
-    historicalWeatherService.getHistoricalNormals(field.centroidLat, field.centroidLon, startDate, maxProjectionDays),
-  ]);
-
-  const projected = mergeProjectedWeatherDays(
+  const historicalDays = await historicalWeatherService.getHistoricalNormals(
+    field.centroidLat,
+    field.centroidLon,
     startDate,
-    maxProjectionDays,
-    forecastSnapshot.days,
-    historicalDays
+    maxProjectionDays
   );
+  const projectedDays = buildHistoricalProjection(startDate, maxProjectionDays, historicalDays);
 
   let cumulativeDegreeDays = 0;
   let estimatedCycleDays = maxProjectionDays;
 
-  for (let index = 0; index < projected.days.length; index += 1) {
-    const day = projected.days[index];
+  for (let index = 0; index < projectedDays.length; index += 1) {
+    const day = projectedDays[index];
     const tempAvg = average([day.temperatureMin, day.temperatureMax]);
     const dailyDegreeDays = Math.max(0, tempAvg - cycleModel.baseTempC);
     cumulativeDegreeDays += dailyDegreeDays;
@@ -191,16 +151,6 @@ export async function estimateCycle(
   }
 
   const endDate = addDays(startDate, estimatedCycleDays - 1);
-  const cycleSources = projected.sources.slice(0, estimatedCycleDays);
-  const forecastDaysUsed = cycleSources.filter((source) => source === 'forecast').length;
-  const historicalDaysUsed = cycleSources.length - forecastDaysUsed;
-  const dataMode: PlanCycleEstimate['dataMode'] =
-    forecastDaysUsed >= estimatedCycleDays
-      ? 'forecast'
-      : forecastDaysUsed === 0
-        ? 'historical'
-        : 'mixed';
-
   const notes = [
     `Data final estimada por soma térmica simplificada, usando temperatura-base de ${cycleModel.baseTempC.toFixed(
       0
@@ -210,9 +160,7 @@ export async function estimateCycle(
     )} graus-dia, derivado do ciclo de ${crop.cycleDays} dias do Grupo II do ZARC e da temperatura média de referência de ${cycleModel.referenceTempC.toFixed(
       1
     )} °C.`,
-    forecastDaysUsed > 0
-      ? `A estimativa usa ${forecastDaysUsed} dias de previsão direta do Open-Meteo e ${historicalDaysUsed} dias de climatologia histórica para completar o ciclo.`
-      : 'A estimativa usa climatologia histórica para todo o ciclo projetado.',
+    'A estimativa usa climatologia histórica do local para todo o ciclo projetado.',
   ];
 
   if (estimatedCycleDays === maxProjectionDays && cumulativeDegreeDays < targetDegreeDays) {
@@ -229,10 +177,6 @@ export async function estimateCycle(
     baseTempC: cycleModel.baseTempC,
     referenceTempC: cycleModel.referenceTempC,
     targetDegreeDays,
-    dataMode,
-    confidence: getConfidenceFromMode(dataMode),
-    forecastDaysUsed,
-    historicalDaysUsed,
     notes,
   };
 }
