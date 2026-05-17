@@ -81,12 +81,6 @@ export interface CropStageRule {
     precipMinPerDay?: number;
     precipMaxPerDay?: number;
     rainyDaysMax?: number;
-    windMax?: number;
-    humidityMin?: number;
-    humidityMax?: number;
-    pestTempMin?: number;
-    pestTempMax?: number;
-    pestHumidityMin?: number;
   };
 }
 
@@ -147,10 +141,7 @@ export type RiskCategoryId =
   | 'water_stress'
   | 'water_excess'
   | 'heat_stress'
-  | 'cold_stress'
-  | 'wind_risk'
-  | 'pest_disease'
-  | 'soil_suitability';
+  | 'cold_stress';
 
 export interface RiskCategoryResult {
   id: RiskCategoryId;

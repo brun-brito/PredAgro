@@ -176,10 +176,7 @@ export type RiskCategoryId =
   | 'water_stress'
   | 'water_excess'
   | 'heat_stress'
-  | 'cold_stress'
-  | 'wind_risk'
-  | 'pest_disease'
-  | 'soil_suitability';
+  | 'cold_stress';
 
 export interface RiskCategoryResult {
   id: RiskCategoryId;
