@@ -1,21 +1,15 @@
 import area from '@turf/area';
 import centroid from '@turf/centroid';
 import { AppError } from '../utils/AppError';
-import { optionalBoolean, optionalEnum, requireString } from '../utils/validators';
+import { requireString } from '../utils/validators';
 import * as farmRepository from '../repositories/farmRepository';
 import * as fieldRepository from '../repositories/fieldRepository';
-import type { DrainageLevel, Field, FieldGeometry, SoilTexture } from '../types/domain';
+import type { Field, FieldGeometry } from '../types/domain';
 
 interface FieldPayload {
   name: string;
   geometry?: FieldGeometry | null;
-  soilTexture?: SoilTexture;
-  drainage?: DrainageLevel;
-  irrigation?: boolean;
 }
-
-const SOIL_TEXTURES: SoilTexture[] = ['arenoso', 'medio', 'argiloso'];
-const DRAINAGE_LEVELS: DrainageLevel[] = ['bom', 'medio', 'ruim'];
 
 function ensureGeometry(geometry: unknown): FieldGeometry {
   if (!geometry || typeof geometry !== 'object') {
@@ -88,9 +82,6 @@ export async function create(userId: string, farmId: string, payload: FieldPaylo
   const name = requireString(payload.name, 'name', 3);
   const geometry = payload.geometry ? ensureGeometry(payload.geometry) : null;
   const metrics = geometry ? computeMetrics(geometry) : null;
-  const soilTexture = optionalEnum(payload.soilTexture, SOIL_TEXTURES, 'soilTexture');
-  const drainage = optionalEnum(payload.drainage, DRAINAGE_LEVELS, 'drainage');
-  const irrigation = optionalBoolean(payload.irrigation, 'irrigation');
   const now = new Date().toISOString();
 
   return fieldRepository.create(userId, farmId, {
@@ -101,9 +92,6 @@ export async function create(userId: string, farmId: string, payload: FieldPaylo
     areaHa: metrics ? metrics.areaHa : null,
     centroidLat: metrics ? metrics.centroidLat : null,
     centroidLon: metrics ? metrics.centroidLon : null,
-    soilTexture,
-    drainage,
-    irrigation,
     createdAt: now,
     updatedAt: now,
   });
@@ -125,9 +113,6 @@ export async function update(
       : null
     : field.geometry;
   const metrics = hasGeometryUpdate && nextGeometry ? computeMetrics(nextGeometry) : null;
-  const soilTexture = optionalEnum(payload.soilTexture, SOIL_TEXTURES, 'soilTexture') ?? field.soilTexture;
-  const drainage = optionalEnum(payload.drainage, DRAINAGE_LEVELS, 'drainage') ?? field.drainage;
-  const irrigation = payload.irrigation !== undefined ? optionalBoolean(payload.irrigation, 'irrigation') : field.irrigation;
 
   const nextField: Field = {
     ...field,
@@ -136,9 +121,6 @@ export async function update(
     areaHa: hasGeometryUpdate ? (metrics ? metrics.areaHa : null) : field.areaHa,
     centroidLat: hasGeometryUpdate ? (metrics ? metrics.centroidLat : null) : field.centroidLat,
     centroidLon: hasGeometryUpdate ? (metrics ? metrics.centroidLon : null) : field.centroidLon,
-    soilTexture,
-    drainage,
-    irrigation,
     updatedAt: new Date().toISOString(),
   };
 

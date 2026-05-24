@@ -13,18 +13,6 @@ import { resolveErrorMessage } from '../utils/errors';
 import type { Farm, Field } from '../types/domain';
 import styles from './FieldOverviewPage.module.css';
 
-const soilLabel: Record<string, string> = {
-  arenoso: 'Arenoso',
-  medio: 'Médio',
-  argiloso: 'Argiloso',
-};
-
-const drainageLabel: Record<string, string> = {
-  bom: 'Boa',
-  medio: 'Média',
-  ruim: 'Ruim',
-};
-
 export function FieldOverviewPage() {
   const { farmId, fieldId } = useParams();
   const { token } = useAuth();
@@ -141,20 +129,6 @@ export function FieldOverviewPage() {
                       {field?.areaHa !== null && field?.areaHa !== undefined
                         ? `${formatNumber(field.areaHa, 2)} ha`
                         : 'Sem delimitação'}
-                    </strong>
-                  </div>
-                  <div>
-                    <span>Textura do solo</span>
-                    <strong>{field?.soilTexture ? soilLabel[field.soilTexture] ?? field.soilTexture : 'Não informado'}</strong>
-                  </div>
-                  <div>
-                    <span>Drenagem</span>
-                    <strong>{field?.drainage ? drainageLabel[field.drainage] ?? field.drainage : 'Não informado'}</strong>
-                  </div>
-                  <div>
-                    <span>Irrigação</span>
-                    <strong>
-                      {field?.irrigation === undefined ? 'Não informado' : field.irrigation ? 'Sim' : 'Não'}
                     </strong>
                   </div>
                   <div>

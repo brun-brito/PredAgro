@@ -13,10 +13,6 @@ export const cropCatalog: CropProfile[] = [
       minCycleDays: 105,
       maxCycleDays: 150,
     },
-    soil: {
-      textures: ['arenoso', 'medio', 'argiloso'],
-      drainage: ['bom', 'medio', 'ruim'],
-    },
     stages: [
       {
         id: 'fase_1',

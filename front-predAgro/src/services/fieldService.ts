@@ -1,13 +1,10 @@
 import { apiClient } from './httpClient';
 import { getCache, invalidateCache, setCache } from '../utils/cache';
-import type { DrainageLevel, Field, FieldGeometry, SoilTexture, WeatherSnapshot } from '../types/domain';
+import type { Field, FieldGeometry, WeatherSnapshot } from '../types/domain';
 
 export interface FieldPayload {
   name: string;
   geometry?: FieldGeometry | null;
-  soilTexture?: SoilTexture;
-  drainage?: DrainageLevel;
-  irrigation?: boolean;
 }
 
 const fieldListKey = (token: string, farmId: string) => `fields:list:${token}:${farmId}`;

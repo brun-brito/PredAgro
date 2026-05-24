@@ -38,9 +38,6 @@ export interface Farm {
   updatedAt: string;
 }
 
-export type SoilTexture = 'arenoso' | 'medio' | 'argiloso';
-export type DrainageLevel = 'bom' | 'medio' | 'ruim';
-
 export type FieldGeometry = {
   type: 'Polygon' | 'MultiPolygon';
   coordinates: number[][][] | number[][][][];
@@ -55,9 +52,6 @@ export interface Field {
   areaHa: number | null;
   centroidLat: number | null;
   centroidLon: number | null;
-  soilTexture?: SoilTexture;
-  drainage?: DrainageLevel;
-  irrigation?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -95,11 +89,6 @@ export interface CropProfile {
     referenceTempC: number;
     minCycleDays: number;
     maxCycleDays: number;
-  };
-  soil: {
-    textures: SoilTexture[];
-    drainage: DrainageLevel[];
-    irrigationRecommended?: boolean;
   };
   stages: CropStageRule[];
   yieldModel?: {
