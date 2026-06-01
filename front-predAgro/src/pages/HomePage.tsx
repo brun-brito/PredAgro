@@ -9,6 +9,8 @@ interface ShowcaseItem {
   title: string;
   description: string;
   image: string;
+  imageWebp: string;
+  imageWebpSrcSet: string;
   alt: string;
 }
 
@@ -74,6 +76,8 @@ const dashboardPreview: ShowcaseItem = {
   description:
     'Entrada rápida para acompanhar fazendas, talhões monitorados, área total e atalhos para as ações mais usadas.',
   image: '/assets/images/1-home.png',
+  imageWebp: '/assets/images/1-home.webp',
+  imageWebpSrcSet: '/assets/images/1-home-800.webp 800w, /assets/images/1-home.webp 2506w',
   alt: 'Visão geral do painel principal da plataforma PredAgro.',
 };
 
@@ -84,6 +88,8 @@ const showcases: ShowcaseItem[] = [
     description:
       'A estrutura começa pelo cadastro das propriedades, deixando a operação preparada para centralizar localização, base do mapa e evolução do acompanhamento.',
     image: '/assets/images/2-fazendas.png',
+    imageWebp: '/assets/images/2-fazendas.webp',
+    imageWebpSrcSet: '/assets/images/2-fazendas-800.webp 800w, /assets/images/2-fazendas.webp 2508w',
     alt: 'Tela de fazendas cadastradas na plataforma PredAgro.',
   },
   {
@@ -92,6 +98,8 @@ const showcases: ShowcaseItem[] = [
     description:
       'A tela do talhão ajuda a conferir o contorno salvo, validar a área desenhada e entender rapidamente se a geometria cadastrada está correta.',
     image: '/assets/images/5-area-talhao.png',
+    imageWebp: '/assets/images/5-area-talhao.webp',
+    imageWebpSrcSet: '/assets/images/5-area-talhao-800.webp 800w, /assets/images/5-area-talhao.webp 2874w',
     alt: 'Tela de delimitação do talhão com polígono desenhado sobre o mapa.',
   },
   {
@@ -100,6 +108,8 @@ const showcases: ShowcaseItem[] = [
     description:
       'As análises mostram nível de risco, fatores de impacto e estimativas de produtividade para cada plano cadastrado.',
     image: '/assets/images/6-previsao.png',
+    imageWebp: '/assets/images/6-previsao.webp',
+    imageWebpSrcSet: '/assets/images/6-previsao-800.webp 800w, /assets/images/6-previsao.webp 1150w',
     alt: 'Tela de planejamento com risco climático e produtividade estimada.',
   },
 ];
@@ -138,11 +148,21 @@ export function HomePage() {
                 <span>Painel principal</span>
                 <span>Clique para ampliar</span>
               </div>
-              <img
-                src={dashboardPreview.image}
-                alt={dashboardPreview.alt}
-                className={styles.previewImage}
-              />
+              <picture style={{ display: 'contents' }}>
+                <source
+                  srcSet={dashboardPreview.imageWebpSrcSet}
+                  sizes="(max-width: 800px) 800px, 2506px"
+                  type="image/webp"
+                />
+                <img
+                  src={dashboardPreview.image}
+                  alt={dashboardPreview.alt}
+                  className={styles.previewImage}
+                  width={2506}
+                  height={1162}
+                  fetchPriority="high"
+                />
+              </picture>
             </button>
 
             <aside className={styles.heroPanel}>
@@ -190,13 +210,24 @@ export function HomePage() {
                   onClick={() => setSelectedPreview(showcase)}
                   aria-label={`Ampliar print: ${showcase.title}`}
                 >
-                  <img
-                    src={showcase.image}
-                    alt={showcase.alt}
-                    className={styles.showcaseImage}
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <div className={styles.showcaseImageWrap}>
+                    <picture style={{ display: 'contents' }}>
+                      <source
+                        srcSet={showcase.imageWebpSrcSet}
+                        sizes="(max-width: 800px) 800px, 100vw"
+                        type="image/webp"
+                      />
+                      <img
+                        src={showcase.image}
+                        alt={showcase.alt}
+                        className={styles.showcaseImage}
+                        width={800}
+                        height={400}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </picture>
+                  </div>
                   <span className={styles.showcaseHint}>Clique para ver em tela cheia</span>
                 </button>
               </article>
@@ -249,11 +280,15 @@ export function HomePage() {
       >
         {selectedPreview && (
           <figure className={styles.lightboxFigure}>
-            <img
-              src={selectedPreview.image}
-              alt={selectedPreview.alt}
-              className={styles.lightboxImage}
-            />
+            <picture style={{ display: 'contents' }}>
+              <source srcSet={selectedPreview.imageWebp} type="image/webp" />
+              <img
+                src={selectedPreview.image}
+                alt={selectedPreview.alt}
+                className={styles.lightboxImage}
+                decoding="async"
+              />
+            </picture>
             <figcaption className={styles.lightboxCaption}>
               <span className={styles.lightboxLabel}>{selectedPreview.label}</span>
               <p>{selectedPreview.description}</p>
